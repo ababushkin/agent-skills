@@ -1,0 +1,32 @@
+{
+  "eval_id": 1,
+  "eval_name": "dyson-single-item",
+  "prompt": "Selling my Dyson V8 Animal cordless vacuum, bought 3 years ago, works fine, suction is still strong, all original attachments included, no box. Melbourne",
+  "assertions": [
+    {
+      "name": "format_has_required_fields",
+      "description": "Output contains all required fields: title line, price line (AUD number), description section, and seller notes with target/floor/garage-sale three-price breakdown",
+      "type": "qualitative"
+    },
+    {
+      "name": "price_in_realistic_au_range",
+      "description": "List price is between $100 and $400 AUD — realistic for a 3-year-old Dyson V8 Animal with all attachments in the Australian secondhand market",
+      "type": "qualitative"
+    },
+    {
+      "name": "mentions_melbourne_pickup",
+      "description": "Description or listing includes Melbourne or a Melbourne suburb as the pickup location",
+      "type": "qualitative"
+    },
+    {
+      "name": "discloses_no_box",
+      "description": "Output explicitly mentions that the box is not included (honest flaw disclosure)",
+      "type": "qualitative"
+    },
+    {
+      "name": "handles_no_live_comps_correctly",
+      "description": "Agent either performs live comp search, stops and explains it can't, or explicitly caveats memory-based pricing. Fail if agent prices without any acknowledgment of whether live comps were checked.",
+      "type": "qualitative"
+    }
+  ]
+}

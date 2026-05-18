@@ -1,0 +1,35 @@
+{
+  "eval_id": 5,
+  "eval_name": "known-defect-disclosure",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "crack_disclosed_in_ad_body",
+      "passed": true,
+      "evidence": "Crack is prominent in the listing title ('Cracked Headband') and explicitly in the body under 'Known issue — please read before messaging' in both the FB Marketplace and Gumtree listings. Baseline also correctly leads with the defect rather than burying it."
+    },
+    {
+      "text": "listing_produced",
+      "passed": true,
+      "evidence": "Two full listing blocks produced (FB Marketplace and Gumtree variants). Item is listed with full disclosure, not refused."
+    },
+    {
+      "text": "price_reflects_damage",
+      "passed": true,
+      "evidence": "Recommended $75 (open at $90, floor $60). Live comps showed damage/parts units $20–$65, working units $100–$160. Baseline correctly positions at the lower end of functional units."
+    },
+    {
+      "text": "format_has_required_fields",
+      "passed": false,
+      "evidence": "Output uses markdown headings (## Facebook Marketplace Listing) not the skill's emoji header format. No '—— seller notes (not for the ad) ——' separator. No three-price breakdown (target/floor/garage-sale) — has a 'Listing Tips' section instead. Format does not match the required block structure."
+    }
+  ],
+  "pass_rate": 0.75,
+  "notes": "3/4. Baseline handles defect disclosure well — crack is in the title and body, pricing is realistic, listing is produced. Fails only on format: no emoji header, no seller notes separator, no 3-price breakdown. The baseline's approach is qualitatively sound but structurally different.",
+  "summary": {
+    "pass_rate": 0.75,
+    "passed": 3,
+    "failed": 1,
+    "total": 4
+  }
+}

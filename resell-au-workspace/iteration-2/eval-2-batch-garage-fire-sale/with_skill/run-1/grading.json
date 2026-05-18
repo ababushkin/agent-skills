@@ -1,0 +1,40 @@
+{
+  "eval_id": 2,
+  "eval_name": "batch-garage-fire-sale",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "makita_gets_listing",
+      "passed": true,
+      "evidence": "Full output block produced: '\ud83c\udff7\ufe0f Makita 18V Drill Kit \u2014 $160' with title, price ($160 ono), description, and seller notes (target $145, floor $125, garage sale $80)."
+    },
+    {
+      "text": "billy_gets_listing",
+      "passed": true,
+      "evidence": "Full output block produced: '\ud83c\udff7\ufe0f IKEA Billy Bookcase (White) \u2014 $45' with title, price ($45 ono), description mentioning the chip, and seller notes (target $40, floor $30, garage sale $20)."
+    },
+    {
+      "text": "dvds_not_listed_solo",
+      "passed": true,
+      "evidence": "Section header: 'Box of ~50 mixed DVDs \u2014 DO NOT LIST SOLO'. Routed to: garage sale box at $10\u2013$15, free curbside, or donation. No standalone listing produced."
+    },
+    {
+      "text": "crt_not_listed",
+      "passed": true,
+      "evidence": "Section header: 'CRT Monitor 19\" (works) \u2014 DO NOT LIST'. Routed to: hard rubbish, e-waste drop-off (recyclingnearyou.com.au), or '$0 free pickup' on FB Marketplace for retro hobbyists."
+    },
+    {
+      "text": "fire_sale_items_have_next_best_action",
+      "passed": true,
+      "evidence": "DVDs: 3 concrete options (garage sale box $10-15, free curbside, donation to Salvos/Vinnies/Brotherhood). CRT: 3 concrete options (hard rubbish, e-waste Officeworks/Jaycar, free pickup FB post)."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Perfect score. With-skill agent applied fire-sale routing correctly, produced properly formatted output blocks for listable items, and gave actionable next steps for all non-listable items. Routing summary table at top is a useful addition.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  }
+}

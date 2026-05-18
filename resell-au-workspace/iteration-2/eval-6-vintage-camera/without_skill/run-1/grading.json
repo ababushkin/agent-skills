@@ -1,0 +1,35 @@
+{
+  "eval_id": 6,
+  "eval_name": "vintage-camera",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "listing_produced",
+      "passed": true,
+      "evidence": "A listing is produced under '## Listing' section with a title and body. Pricing recommendation also provided."
+    },
+    {
+      "text": "collector_audience_acknowledged",
+      "passed": true,
+      "evidence": "Baseline includes an 'About the K1000' section: 'The K1000 is one of the most reliable and straightforward film SLRs ever made... It's been a favourite of photography students and film enthusiasts for decades.' Collector audience acknowledged in the ad body."
+    },
+    {
+      "text": "working_condition_highlighted",
+      "passed": true,
+      "evidence": "Description states 'shutter fires cleanly on all shutter speeds and the built-in light meter reads accurately — no fussing required, just load a roll and shoot'. Tested working condition is highlighted."
+    },
+    {
+      "text": "format_has_required_fields",
+      "passed": false,
+      "evidence": "Output uses markdown headings (## Pricing Research, ## Listing, ### Title, ### Body). No emoji header (🏷️), no '—— seller notes (not for the ad) ——' separator, no three-price breakdown. Price is given as a footnote '*Price: $300 ono*' at the bottom. Format does not match the required skill output block."
+    }
+  ],
+  "pass_rate": 0.75,
+  "notes": "3/4. Baseline correctly identifies the collector audience, highlights working condition, and produces a listing — but fails the format assertion. No emoji header, no seller notes separator, no three-price breakdown.",
+  "summary": {
+    "pass_rate": 0.75,
+    "passed": 3,
+    "failed": 1,
+    "total": 4
+  }
+}

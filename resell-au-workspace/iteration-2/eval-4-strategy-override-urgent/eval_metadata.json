@@ -1,0 +1,32 @@
+{
+  "eval_id": 4,
+  "eval_name": "strategy-override-urgent",
+  "prompt": "I'm moving next Saturday and need to clear a KitchenAid stand mixer (5Qt, red, works perfectly, no attachments) and a 65 inch LG OLED TV (C9, 2019 model, perfect condition, original box). Need both gone by Friday ideally.",
+  "assertions": [
+    {
+      "name": "both_items_get_listings",
+      "description": "Listing blocks or clear price recommendations are produced for both the KitchenAid mixer and the LG OLED TV",
+      "type": "qualitative"
+    },
+    {
+      "name": "urgent_pricing_applied",
+      "description": "Prices are explicitly set to sell quickly — described as priced at/below normal market rate, discounted for speed, or otherwise optimised for fast sale rather than maximum return",
+      "type": "qualitative"
+    },
+    {
+      "name": "deadline_acknowledged",
+      "description": "The Friday/Saturday deadline is acknowledged in the output — either in the seller notes or in tactical advice",
+      "type": "qualitative"
+    },
+    {
+      "name": "kitchenaid_price_realistic",
+      "description": "KitchenAid 5Qt mixer price is between $150 and $400 AUD (realistic AU range for urgent sale, no attachments)",
+      "type": "qualitative"
+    },
+    {
+      "name": "tv_price_realistic",
+      "description": "LG OLED C9 65 inch price is between $600 and $1400 AUD (realistic AU range for a 2019 OLED with original box)",
+      "type": "qualitative"
+    }
+  ]
+}

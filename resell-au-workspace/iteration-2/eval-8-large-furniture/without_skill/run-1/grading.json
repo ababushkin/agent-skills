@@ -1,0 +1,35 @@
+{
+  "eval_id": 8,
+  "eval_name": "large-furniture",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "listing_produced",
+      "passed": true,
+      "evidence": "Two listings produced: Facebook Marketplace version and Gumtree version, both with title and description."
+    },
+    {
+      "text": "arm_wear_disclosed",
+      "passed": true,
+      "evidence": "FB listing says 'There is some visible wear on the armrests from regular use, which is honest and normal for the age.' Gumtree listing: 'Armrests show normal wear from use — visible but not damaged'. Disclosed in both listings."
+    },
+    {
+      "text": "buyer_transport_noted",
+      "passed": true,
+      "evidence": "FB listing: 'you will need a ute, van, or trailer to collect it'. Gumtree listing: 'you must have a ute, van, or trailer'. Also 'Buyer to Arrange Ute/Van' in the FB title. Transport requirement is prominent in both."
+    },
+    {
+      "text": "format_has_required_fields",
+      "passed": false,
+      "evidence": "Output uses markdown structure (## Pricing Research, ## Suggested Listings, ### Facebook Marketplace). No emoji header (🏷️), no '—— seller notes (not for the ad) ——' separator, no three-price breakdown. Content is good but format does not match the required skill block structure."
+    }
+  ],
+  "pass_rate": 0.75,
+  "notes": "3/4. Baseline correctly handles transport disclosure and arm wear, produces two listings — but fails format. No emoji header, no seller notes separator, no three-price breakdown.",
+  "summary": {
+    "pass_rate": 0.75,
+    "passed": 3,
+    "failed": 1,
+    "total": 4
+  }
+}

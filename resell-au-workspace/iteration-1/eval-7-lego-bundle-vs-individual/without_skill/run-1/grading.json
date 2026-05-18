@@ -1,0 +1,35 @@
+{
+  "eval_id": 7,
+  "eval_name": "lego-bundle-vs-individual",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "bundle_recommendation_explicit",
+      "passed": true,
+      "evidence": "Output states 'Sell separately, not as a bundle.' clearly in the opening and in a summary table (Sell separately vs. Bundle all three vs. Bundle the two adult sets). Recommendation is unambiguous."
+    },
+    {
+      "text": "incomplete_set_flagged",
+      "passed": true,
+      "evidence": "Bugatti Chiron section explicitly flags missing pieces with detailed analysis: 'If they're structural or visible (engine components, body panels, unique Technic pieces), buyers will heavily discount.' Discount logic applied: no box (−$50–80) + missing ~15 pieces (−$80–100) drives significant reduction from $425–700 complete-set comps."
+    },
+    {
+      "text": "prices_given_for_surviving_items",
+      "passed": true,
+      "evidence": "Pricing table with Ask and Floor for all three: Police Station $185/$160, Bugatti Chiron $330/$250, Tower Bridge $300/$280. All three are priced."
+    },
+    {
+      "text": "tower_bridge_no_box_affects_price",
+      "passed": true,
+      "evidence": "Output notes 'Missing the box is a meaningful hit for Creator Expert sets'. Tower Bridge priced at $280–320 vs sealed/new at $350–550. Missing box impact explicitly stated and priced in."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "4/4 — but this eval does not discriminate the skill from baseline. Both correctly recommend selling separately, flag the Chiron's missing pieces, and price the Tower Bridge below boxed comps. Key qualitative difference not captured by assertions: baseline produces pricing tables/analysis but NOT copy-paste-ready listing blocks. With-skill produces three immediately usable listing blocks in the exact required format (emoji header, seller notes separator, 3-price breakdown). Consider adding a format_has_required_fields assertion to eval-7 in the next iteration.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

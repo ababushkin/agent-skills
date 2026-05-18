@@ -1,0 +1,40 @@
+{
+  "eval_id": 2,
+  "eval_name": "batch-garage-fire-sale",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "makita_gets_listing",
+      "passed": true,
+      "evidence": "Full listing copy produced with title ('Makita 18V Drill Kit \u2014 2 Batteries + Charger \u2014 Good Condition') and body copy. Price $150, accept $120."
+    },
+    {
+      "text": "billy_gets_listing",
+      "passed": true,
+      "evidence": "Full listing copy produced with title ('IKEA Billy Bookcase \u2014 White, 3 Shelf \u2014 Minor Chip \u2014 $40') and body copy. Price $40 firm."
+    },
+    {
+      "text": "dvds_not_listed_solo",
+      "passed": false,
+      "evidence": "DVDs are labeled 'MARGINAL, LIST AS BUNDLE' and listing copy is provided ('Box of 50 DVDs \u2014 Mixed Titles \u2014 $15 the Lot'). Although it's technically a bundle, listing copy was produced. The skill's fire-sale routing would have been a clearer 'don't list' with next actions only."
+    },
+    {
+      "text": "crt_not_listed",
+      "passed": true,
+      "evidence": "Correctly labeled 'DO NOT LIST'. Gave e-waste options: Officeworks FreedomRecycle, council e-waste, TechCollect. No listing produced."
+    },
+    {
+      "text": "fire_sale_items_have_next_best_action",
+      "passed": true,
+      "evidence": "DVDs: donate to op shop, nature strip free box. CRT: Officeworks, council e-waste, TechCollect. Both have concrete next actions."
+    }
+  ],
+  "pass_rate": 0.8,
+  "notes": "Good output overall. Key gap: DVDs were given listing copy despite being fire-sale territory \u2014 the without-skill agent waffled ('MARGINAL') rather than routing cleanly. The with-skill agent was decisive. No formal output blocks (emoji headers, seller notes) produced.",
+  "summary": {
+    "pass_rate": 0.8,
+    "passed": 4,
+    "failed": 1,
+    "total": 5
+  }
+}

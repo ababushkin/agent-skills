@@ -1,0 +1,27 @@
+{
+  "eval_id": 5,
+  "eval_name": "known-defect-disclosure",
+  "prompt": "Selling my Sony WH-1000XM3 headphones — sound quality is still amazing, ANC works perfectly. But the headband cracked and I've got electrical tape holding it together. Comes with the hard case and USB-C cable.",
+  "assertions": [
+    {
+      "name": "crack_disclosed_in_ad_body",
+      "description": "The cracked/taped headband is disclosed in the public-facing Description section of the listing block — not only in seller notes",
+      "type": "qualitative"
+    },
+    {
+      "name": "listing_produced",
+      "description": "A listing block is produced (the item can still be sold with disclosure — it should not be refused)",
+      "type": "qualitative"
+    },
+    {
+      "name": "price_reflects_damage",
+      "description": "The list price is below what a good-condition WH-1000XM3 would fetch — reflects the cosmetic damage",
+      "type": "qualitative"
+    },
+    {
+      "name": "format_has_required_fields",
+      "description": "Output has: emoji header, title line, price line, description, seller notes separator, and three-price breakdown (target/floor/garage-sale)",
+      "type": "qualitative"
+    }
+  ]
+}

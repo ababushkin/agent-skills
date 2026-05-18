@@ -1,0 +1,40 @@
+{
+  "eval_id": 7,
+  "eval_name": "lego-bundle-vs-individual",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "bundle_recommendation_explicit",
+      "passed": true,
+      "evidence": "Output states 'Sell separately, not as a bundle.' clearly in the opening and in a summary table. Recommendation is unambiguous."
+    },
+    {
+      "text": "incomplete_set_flagged",
+      "passed": true,
+      "evidence": "Bugatti Chiron section explicitly flags missing pieces with detailed analysis. Discount logic applied: no box + missing ~15 pieces drives significant reduction from complete-set comps."
+    },
+    {
+      "text": "prices_given_for_surviving_items",
+      "passed": true,
+      "evidence": "Pricing table with Ask and Floor for all three sets. All three are priced."
+    },
+    {
+      "text": "tower_bridge_no_box_affects_price",
+      "passed": true,
+      "evidence": "Output notes 'Missing the box is a meaningful hit for Creator Expert sets'. Tower Bridge priced below sealed/new. Missing box impact explicitly stated and priced in."
+    },
+    {
+      "text": "format_has_required_fields",
+      "passed": false,
+      "evidence": "Output is a pricing analysis and recommendation table — NOT copy-paste listing blocks. No emoji header (🏷️), no '—— seller notes (not for the ad) ——' separator, no three-price breakdown in seller notes format. The baseline produces analysis that the user must then turn into listings; the skill produces ready-to-post ad copy."
+    }
+  ],
+  "pass_rate": 0.8,
+  "notes": "4/5 with the new format assertion. Baseline correctly handles the bundle decision and pricing, but fails to produce copy-paste-ready listing blocks in the required format.",
+  "summary": {
+    "pass_rate": 0.8,
+    "passed": 4,
+    "failed": 1,
+    "total": 5
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "eval_id": 4,
+  "eval_name": "strategy-override-urgent",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "both_items_get_listings",
+      "passed": true,
+      "evidence": "Full listing copy for both: KitchenAid title + body, LG TV title + body. Both include price, key specs, and deadline."
+    },
+    {
+      "text": "urgent_pricing_applied",
+      "passed": true,
+      "evidence": "Strategy labeled 'urgent but not desperate'. KitchenAid priced $260 (below mid-market $200\u2013$350 range). TV priced $850. However, framing is '10\u201315% below mid-market' rather than 'at floor' \u2014 a softer urgency application than the with-skill version."
+    },
+    {
+      "text": "deadline_acknowledged",
+      "passed": true,
+      "evidence": "Both listings include 'Must go by Friday 23 May \u2014 I'm relocating.' and escalation pricing guidance for if Friday arrives with items unsold."
+    },
+    {
+      "text": "kitchenaid_price_realistic",
+      "passed": true,
+      "evidence": "$260 is within the $150\u2013$400 realistic AU range. Note: more aggressively priced than the with-skill version ($350), which may be more or less optimal depending on actual comps."
+    },
+    {
+      "text": "tv_price_realistic",
+      "passed": true,
+      "evidence": "$850 is within the $600\u2013$1400 realistic AU range for a 2019 LG OLED C9 65\" with original box."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Equal score to with-skill on assertions. Without-skill produced solid urgent listings. Key difference from with-skill: no explicit 'strategy override' label, softer urgency framing ('urgent but not desperate' vs 'at floor, firm'), and no structured seller notes format. Without-skill actually priced the KitchenAid lower ($260 vs $350) which may be more aggressive for urgency \u2014 both are in range.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  }
+}

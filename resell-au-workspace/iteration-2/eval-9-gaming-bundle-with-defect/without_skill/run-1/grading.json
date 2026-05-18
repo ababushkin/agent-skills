@@ -1,0 +1,35 @@
+{
+  "eval_id": 9,
+  "eval_name": "gaming-bundle-with-defect",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "joy_con_drift_disclosed",
+      "passed": true,
+      "evidence": "Description says 'one of the left Joy-Cons has some drift (the thumbstick occasionally drifts slightly without input). It's still totally playable — I've been using it without issues — but I want to be upfront about it.' Drift is clearly disclosed in the listing body."
+    },
+    {
+      "text": "price_reflects_drift",
+      "passed": true,
+      "evidence": "Pricing section says 'slight discount for the drift Joy-Con: –$20–$30' in the rationale. List price $450 recommended, accepting $400. Drift factored into the price recommendation."
+    },
+    {
+      "text": "games_listed",
+      "passed": true,
+      "evidence": "What's included list explicitly names 'The Legend of Zelda: Breath of the Wild, Mario Kart 8 Deluxe, Animal Crossing: New Horizons'. All three listed in the description."
+    },
+    {
+      "text": "format_has_required_fields",
+      "passed": false,
+      "evidence": "Output uses markdown structure (## Market Research, ## Listing Draft, ### Platform:, **Title:**, **Price:**, **Description:**). No emoji header (🏷️), no '—— seller notes (not for the ad) ——' separator, no three-price breakdown. Tips are in a separate '### Tips for Selling' section rather than the seller notes format."
+    }
+  ],
+  "pass_rate": 0.75,
+  "notes": "3/4. Baseline correctly handles drift disclosure, pricing, and game listing — but fails format. The content is good but lacks the structured seller notes block with three-price breakdown.",
+  "summary": {
+    "pass_rate": 0.75,
+    "passed": 3,
+    "failed": 1,
+    "total": 4
+  }
+}

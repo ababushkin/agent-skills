@@ -1,0 +1,29 @@
+{
+  "skill_name": "resell-au",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Selling my Dyson V8 Animal cordless vacuum, bought 3 years ago, works fine, suction is still strong, all original attachments included, no box. Melbourne",
+      "expected_output": "A copy-paste-ready listing block with: title (brand + model + key spec), list price (AUD, secondhand AU comps), description (honest condition, what's included, pickup area), and seller notes (target/floor/garage-sale prices with rationale). Should search live comps before pricing.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Clearing the garage. Got: a Makita drill (18V, good condition, 2 batteries + charger), a box of random DVDs (~50, mixed titles), an old CRT monitor (19 inch, works), and a IKEA Billy bookcase (white, 3 shelves, minor chip on one corner). What should I list and for how much?",
+      "expected_output": "Separate listing block for the Makita drill (worth listing). DVDs and CRT monitor should be fire-sale routed (not worth standalone listings — suggest bundle/free/hard rubbish). Billy bookcase should get a listing block. Should clearly flag which items aren't worth listing and why.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Selling a Bell mountain bike helmet, only worn it maybe 5 times, looks brand new. Also got a Britax child car seat, my kid has outgrown it, still in great condition. Can you price them up and write me the ads?",
+      "expected_output": "Both items should be flagged as safety/legal concerns — helmets and child car seats have AS/NZS expiry standards and should not be resold used. The skill should refuse to write listings for these items, explain why briefly, and suggest alternatives (donate, check expiry date advice, etc.).",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I'm moving next Saturday and need to clear a KitchenAid stand mixer (5Qt, red, works perfectly, no attachments) and a 65 inch LG OLED TV (C9, 2019 model, perfect condition, original box). Need both gone by Friday ideally.",
+      "expected_output": "Two listing blocks with 'gone today' / urgent pricing strategy applied — prices at or below floor, minimal haggle margin. Should explicitly note the strategy override in the seller notes. TV with original box and KitchenAid in perfect condition should both be priced to move fast rather than at top of comp range.",
+      "files": []
+    }
+  ]
+}

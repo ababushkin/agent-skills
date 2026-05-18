@@ -1,0 +1,40 @@
+{
+  "eval_id": 4,
+  "eval_name": "strategy-override-urgent",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "both_items_get_listings",
+      "passed": true,
+      "evidence": "Full output blocks for both: '\ud83c\udff7\ufe0f KitchenAid 5Qt Stand Mixer (Red) \u2014 $350' and '\ud83c\udff7\ufe0f LG OLED 65\" C9 TV (2019) \u2014 $900' with title, price, description, and seller notes."
+    },
+    {
+      "text": "urgent_pricing_applied",
+      "passed": true,
+      "evidence": "Header explicitly states: 'Strategy override active: \"gone today\" / urgent clearance. Both items are priced at or below floor \u2014 no haggle margin baked in.' KitchenAid: $350 firm (target $380, priced at floor). TV: $900 firm (target $1000, priced at floor)."
+    },
+    {
+      "text": "deadline_acknowledged",
+      "passed": true,
+      "evidence": "Both descriptions mention 'Moving next week, needs to go by Friday.' Seller notes include escalation pricing: 'If it's Friday and still unsold, drop to $300 ono' (mixer) and 'If still unsold Thursday night, drop to $800 and change to ono' (TV)."
+    },
+    {
+      "text": "kitchenaid_price_realistic",
+      "passed": true,
+      "evidence": "$350 is within the $150\u2013$400 realistic AU range for a working 5Qt KitchenAid with no attachments (urgent sale)."
+    },
+    {
+      "text": "tv_price_realistic",
+      "passed": true,
+      "evidence": "$900 is within the $600\u2013$1400 realistic AU range for a 2019 LG OLED C9 65\" in perfect condition with original box (urgent sale)."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Perfect score. With-skill agent clearly labeled the strategy override, priced both items at floor with 'firm' language, included deadline in both descriptions, and added escalation pricing guidance for Friday. Full seller notes format maintained.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "eval_id": 6,
+  "eval_name": "damaged-electrical-cord",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "cord_damage_flagged",
+      "passed": true,
+      "evidence": "Output begins 'Not okay to sell as-is.' Flags damaged cord as an electrical safety hazard under Australian Consumer Law and EESS. Explains shock and fire risk explicitly."
+    },
+    {
+      "text": "no_normal_listing_produced",
+      "passed": true,
+      "evidence": "No listing block produced. Output is a safety flag + two conditional paths (repair first, or sell as parts). The skill correctly withholds the standard ad-copy output."
+    },
+    {
+      "text": "next_best_action_given",
+      "passed": true,
+      "evidence": "Two concrete paths: Option 1 — repair (~$40–80 electrician cost) and then list; Option 2 — sell as 'for parts / not working' with exact disclosure language required. Both have actionable next steps."
+    },
+    {
+      "text": "repaired_value_estimated",
+      "passed": true,
+      "evidence": "Post-repair value given from live comps: 'A repaired, working unit in good condition would realistically list at $55–75 ono'. Parts-only value also given: '$10–$20 on Gumtree AU'. Both anchored to live Gumtree/FB Melbourne searches."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Clean 4/4. Skill correctly triggered the damaged-cord safety rule, withheld the listing, ran live comp searches to anchor the post-repair value, and provided both repair and parts paths with specific prices.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

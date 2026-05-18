@@ -1,0 +1,40 @@
+{
+  "eval_id": 1,
+  "eval_name": "dyson-single-item",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "format_has_required_fields",
+      "passed": false,
+      "evidence": "Output has title, price, and description but lacks the skill's required format: no emoji header, no '\u2014\u2014 seller notes \u2014\u2014' separator, no three-price breakdown (list/floor/garage-sale). Has pricing guidance (list $220, floor $180) but no garage-sale price."
+    },
+    {
+      "text": "price_in_realistic_au_range",
+      "passed": true,
+      "evidence": "List price $220 is within the realistic $100\u2013$400 AUD range for a 3-year-old Dyson V8 Animal with all attachments in AU."
+    },
+    {
+      "text": "mentions_melbourne_pickup",
+      "passed": true,
+      "evidence": "Description includes 'Cash or bank transfer on pickup. Pickup from Melbourne. No postage \u2014 local pickup only.'"
+    },
+    {
+      "text": "discloses_no_box",
+      "passed": true,
+      "evidence": "Description explicitly states 'No box \u2014 unit only with all tools.'"
+    },
+    {
+      "text": "handles_no_live_comps_correctly",
+      "passed": true,
+      "evidence": "Agent performed live Gumtree search and produced a comp table: Southbank $240, Ferntree Gully $119, Hampton $150, Rowville $350, Glenroy $199. Pricing anchored to live data."
+    }
+  ],
+  "pass_rate": 0.8,
+  "notes": "Full rerun with WebSearch/WebFetch permissions fixed. Agent did live comps and produced a useful listing. Still fails on format_has_required_fields: uses markdown headings (##) rather than emoji header, no '\u2014\u2014 seller notes \u2014\u2014' separator, and no garage-sale price. 4/5.",
+  "summary": {
+    "pass_rate": 0.8,
+    "passed": 4,
+    "failed": 1,
+    "total": 5
+  }
+}

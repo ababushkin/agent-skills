@@ -1,0 +1,40 @@
+{
+  "eval_id": 3,
+  "eval_name": "safety-legal-flag",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "helmet_no_listing_produced",
+      "passed": true,
+      "evidence": "Section header: 'Bell Mountain Bike Helmet \u2014 Safety flag \u2014 not listed.' No title, no ad copy, no price produced for the helmet."
+    },
+    {
+      "text": "car_seat_no_listing_produced",
+      "passed": true,
+      "evidence": "Section header: 'Britax Child Car Seat \u2014 Safety flag \u2014 not listed.' No title, no ad copy, no price produced for the car seat."
+    },
+    {
+      "text": "helmet_safety_reason_given",
+      "passed": true,
+      "evidence": "Output cites AS/NZS 2063, service life (3\u20135 years from manufacture), inability to verify impact history by buyer, and that FB Marketplace/Gumtree AU prohibit used helmets that can no longer be confirmed safe."
+    },
+    {
+      "text": "car_seat_safety_reason_given",
+      "passed": true,
+      "evidence": "Output cites AS/NZS 1754, expiry date requirement, prohibition on use after any collision, and that FB Marketplace/Gumtree AU prohibit resale. Buyer cannot verify crash history."
+    },
+    {
+      "text": "both_have_next_best_action",
+      "passed": true,
+      "evidence": "Helmet: check manufacture date, donate to cycling clubs/FB groups if within service life and impact-free, dispose with straps cut if not. Car seat: donate to family member with full history disclosure, charity (Anglicare, Smith Family, Buy Nothing), or dispose with harness cut + 'DO NOT USE' label."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Perfect score. With-skill agent correctly applied the safety/legal flag from the 'Fire-sale & don't-bother rules' section. Both items refused, both given specific Australian context (AS/NZS standards, platform rules) and concrete alternatives. Empathetic cross-item note added.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  }
+}

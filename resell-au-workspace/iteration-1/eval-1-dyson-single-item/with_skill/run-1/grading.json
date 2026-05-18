@@ -1,0 +1,40 @@
+{
+  "eval_id": 1,
+  "eval_name": "dyson-single-item",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "format_has_required_fields",
+      "passed": true,
+      "evidence": "Output has emoji header '\ud83c\udff7\ufe0f Dyson V8 Animal Cordless Vacuum \u2014 $225', title line, price line ($225 ono), description, and '\u2014\u2014 seller notes (not for the ad) \u2014\u2014' separator with Target ~$200 | Floor $180 | Garage sale $110 three-price breakdown. All required fields present."
+    },
+    {
+      "text": "price_in_realistic_au_range",
+      "passed": true,
+      "evidence": "List price $225 ono is within the realistic $100\u2013$400 AUD range for a 3-year-old Dyson V8 Animal with all attachments in AU. Agent found live Gumtree Melbourne comps ranging $150\u2013$350 and anchored to $225."
+    },
+    {
+      "text": "mentions_melbourne_pickup",
+      "passed": true,
+      "evidence": "Description includes 'Pickup Melbourne, cash or PayID on collection.'"
+    },
+    {
+      "text": "discloses_no_box",
+      "passed": true,
+      "evidence": "Description explicitly states 'no box' in the body copy: 'All original attachments included (motorhead, crevice tool, combination tool). No box.'"
+    },
+    {
+      "text": "handles_no_live_comps_correctly",
+      "passed": true,
+      "evidence": "Agent performed live Gumtree search and found real comps: $150 (flawed unit), $199 (V8 Absolute), $240 (V8 Animal, excellent), $350 (as-new). Pricing anchored directly to these comps in seller notes."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Full rerun with WebSearch/WebFetch permissions fixed. Agent performed live comp search and produced a complete, well-formatted output block. Previous 1/5 result was entirely due to the environment permission issue, not a skill flaw.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  }
+}

@@ -1,0 +1,641 @@
+{
+  "metadata": {
+    "skill_name": "resell-au",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-05-18T10:23:39Z",
+    "evals_run": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 151.6,
+        "tokens": 40954,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "format_has_required_fields",
+          "passed": true,
+          "evidence": "Output has emoji header '\ud83c\udff7\ufe0f Dyson V8 Animal Cordless Vacuum \u2014 $225', title line, price line ($225 ono), description, and '\u2014\u2014 seller notes (not for the ad) \u2014\u2014' separator with Target ~$200 | Floor $180 | Garage sale $110 three-price breakdown. All required fields present."
+        },
+        {
+          "text": "price_in_realistic_au_range",
+          "passed": true,
+          "evidence": "List price $225 ono is within the realistic $100\u2013$400 AUD range for a 3-year-old Dyson V8 Animal with all attachments in AU. Agent found live Gumtree Melbourne comps ranging $150\u2013$350 and anchored to $225."
+        },
+        {
+          "text": "mentions_melbourne_pickup",
+          "passed": true,
+          "evidence": "Description includes 'Pickup Melbourne, cash or PayID on collection.'"
+        },
+        {
+          "text": "discloses_no_box",
+          "passed": true,
+          "evidence": "Description explicitly states 'no box' in the body copy: 'All original attachments included (motorhead, crevice tool, combination tool). No box.'"
+        },
+        {
+          "text": "handles_no_live_comps_correctly",
+          "passed": true,
+          "evidence": "Agent performed live Gumtree search and found real comps: $150 (flawed unit), $199 (V8 Absolute), $240 (V8 Animal, excellent), $350 (as-new). Pricing anchored directly to these comps in seller notes."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 71.0,
+        "tokens": 33626,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "makita_gets_listing",
+          "passed": true,
+          "evidence": "Full output block produced: '\ud83c\udff7\ufe0f Makita 18V Drill Kit \u2014 $160' with title, price ($160 ono), description, and seller notes (target $145, floor $125, garage sale $80)."
+        },
+        {
+          "text": "billy_gets_listing",
+          "passed": true,
+          "evidence": "Full output block produced: '\ud83c\udff7\ufe0f IKEA Billy Bookcase (White) \u2014 $45' with title, price ($45 ono), description mentioning the chip, and seller notes (target $40, floor $30, garage sale $20)."
+        },
+        {
+          "text": "dvds_not_listed_solo",
+          "passed": true,
+          "evidence": "Section header: 'Box of ~50 mixed DVDs \u2014 DO NOT LIST SOLO'. Routed to: garage sale box at $10\u2013$15, free curbside, or donation. No standalone listing produced."
+        },
+        {
+          "text": "crt_not_listed",
+          "passed": true,
+          "evidence": "Section header: 'CRT Monitor 19\" (works) \u2014 DO NOT LIST'. Routed to: hard rubbish, e-waste drop-off (recyclingnearyou.com.au), or '$0 free pickup' on FB Marketplace for retro hobbyists."
+        },
+        {
+          "text": "fire_sale_items_have_next_best_action",
+          "passed": true,
+          "evidence": "DVDs: 3 concrete options (garage sale box $10-15, free curbside, donation to Salvos/Vinnies/Brotherhood). CRT: 3 concrete options (hard rubbish, e-waste Officeworks/Jaycar, free pickup FB post)."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 34.8,
+        "tokens": 30986,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "helmet_no_listing_produced",
+          "passed": true,
+          "evidence": "Section header: 'Bell Mountain Bike Helmet \u2014 Safety flag \u2014 not listed.' No title, no ad copy, no price produced for the helmet."
+        },
+        {
+          "text": "car_seat_no_listing_produced",
+          "passed": true,
+          "evidence": "Section header: 'Britax Child Car Seat \u2014 Safety flag \u2014 not listed.' No title, no ad copy, no price produced for the car seat."
+        },
+        {
+          "text": "helmet_safety_reason_given",
+          "passed": true,
+          "evidence": "Output cites AS/NZS 2063, service life (3\u20135 years from manufacture), inability to verify impact history by buyer, and that FB Marketplace/Gumtree AU prohibit used helmets that can no longer be confirmed safe."
+        },
+        {
+          "text": "car_seat_safety_reason_given",
+          "passed": true,
+          "evidence": "Output cites AS/NZS 1754, expiry date requirement, prohibition on use after any collision, and that FB Marketplace/Gumtree AU prohibit resale. Buyer cannot verify crash history."
+        },
+        {
+          "text": "both_have_next_best_action",
+          "passed": true,
+          "evidence": "Helmet: check manufacture date, donate to cycling clubs/FB groups if within service life and impact-free, dispose with straps cut if not. Car seat: donate to family member with full history disclosure, charity (Anglicare, Smith Family, Buy Nothing), or dispose with harness cut + 'DO NOT USE' label."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 82.8,
+        "tokens": 36636,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "both_items_get_listings",
+          "passed": true,
+          "evidence": "Full output blocks for both: '\ud83c\udff7\ufe0f KitchenAid 5Qt Stand Mixer (Red) \u2014 $350' and '\ud83c\udff7\ufe0f LG OLED 65\" C9 TV (2019) \u2014 $900' with title, price, description, and seller notes."
+        },
+        {
+          "text": "urgent_pricing_applied",
+          "passed": true,
+          "evidence": "Header explicitly states: 'Strategy override active: \"gone today\" / urgent clearance. Both items are priced at or below floor \u2014 no haggle margin baked in.' KitchenAid: $350 firm (target $380, priced at floor). TV: $900 firm (target $1000, priced at floor)."
+        },
+        {
+          "text": "deadline_acknowledged",
+          "passed": true,
+          "evidence": "Both descriptions mention 'Moving next week, needs to go by Friday.' Seller notes include escalation pricing: 'If it's Friday and still unsold, drop to $300 ono' (mixer) and 'If still unsold Thursday night, drop to $800 and change to ono' (TV)."
+        },
+        {
+          "text": "kitchenaid_price_realistic",
+          "passed": true,
+          "evidence": "$350 is within the $150\u2013$400 realistic AU range for a working 5Qt KitchenAid with no attachments (urgent sale)."
+        },
+        {
+          "text": "tv_price_realistic",
+          "passed": true,
+          "evidence": "$900 is within the $600\u2013$1400 realistic AU range for a 2019 LG OLED C9 65\" in perfect condition with original box (urgent sale)."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 65.4,
+        "tokens": 37273,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "crack_disclosed_in_ad_body",
+          "passed": true,
+          "evidence": "Description section reads: 'Headband has cracked and is held together with electrical tape (cosmetic structural damage \u2014 pictured).' Flaw is in the public-facing ad copy, not just seller notes. Also appears in the title: 'great sound, cracked headband'."
+        },
+        {
+          "text": "listing_produced",
+          "passed": true,
+          "evidence": "Full listing block produced with emoji header '\ud83c\udff7\ufe0f Sony WH-1000XM3 Noise Cancelling Headphones \u2014 $90'. Item is not refused \u2014 it is listed with disclosure."
+        },
+        {
+          "text": "price_reflects_damage",
+          "passed": true,
+          "evidence": "Listed at $90 ono, target ~$80, floor $70. Live comps showed working XM3s with case at $100\u2013$159. Seller notes explain the cracked/taped headband is 'a step below worn' \u2014 discount is applied and justified against comp range."
+        },
+        {
+          "text": "format_has_required_fields",
+          "passed": true,
+          "evidence": "Output has emoji header, title line, price line ($90 ono), description block, '\u2014\u2014 seller notes (not for the ad) \u2014\u2014' separator, and Target ~$80 | Floor $70 | Garage sale $45 three-price breakdown. All required fields present."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 57.4,
+        "tokens": 33953,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "cord_damage_flagged",
+          "passed": true,
+          "evidence": "Output begins 'Not okay to sell as-is.' Flags damaged cord as an electrical safety hazard under Australian Consumer Law and EESS. Explains shock and fire risk explicitly."
+        },
+        {
+          "text": "no_normal_listing_produced",
+          "passed": true,
+          "evidence": "No listing block produced. Output is a safety flag + two conditional paths (repair first, or sell as parts). The skill correctly withholds the standard ad-copy output."
+        },
+        {
+          "text": "next_best_action_given",
+          "passed": true,
+          "evidence": "Two concrete paths: Option 1 \u2014 repair (~$40\u201380 electrician cost) and then list; Option 2 \u2014 sell as 'for parts / not working' with exact disclosure language required. Both have actionable next steps."
+        },
+        {
+          "text": "repaired_value_estimated",
+          "passed": true,
+          "evidence": "Post-repair value given from live comps: 'A repaired, working unit in good condition would realistically list at $55\u201375 ono'. Parts-only value also given: '$10\u2013$20 on Gumtree AU'. Both anchored to live Gumtree/FB Melbourne searches."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 344.1,
+        "tokens": 47849,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "bundle_recommendation_explicit",
+          "passed": true,
+          "evidence": "Output opens 'Sell separately. Do not bundle these three.' Explains rationale: different collector audiences, different buyer pools, bundling depresses Chiron and Tower Bridge values. Clear and unambiguous."
+        },
+        {
+          "text": "incomplete_set_flagged",
+          "passed": true,
+          "evidence": "Bugatti Chiron listing title reads 'LEGO Technic Bugatti Chiron 42083 \u2014 built & disassembled, ~15 pieces missing'. Description states 'Approximately 15 pieces missing (disclosed honestly \u2014 buyer should verify against inventory before purchasing)'. Seller notes flag missing pieces as a meaningful discount driver (~17% below comp) and advise Brickset inventory check. CRITICAL tip calls out that LEGO Technic buyers are 'meticulous counters'."
+        },
+        {
+          "text": "prices_given_for_surviving_items",
+          "passed": true,
+          "evidence": "Three full listing blocks produced: Police Station $230 ono, Bugatti Chiron $300 ono, Tower Bridge $320 ono. Each has target/floor/garage-sale in seller notes."
+        },
+        {
+          "text": "tower_bridge_no_box_affects_price",
+          "passed": true,
+          "evidence": "Seller notes state 'No box = significantly lower ceiling' and compare to sealed examples at $450\u2013600. Tower Bridge priced at $320 vs Gumtree comp at $370 (which had no box OR instructions). The missing box impact is called out explicitly and priced in."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 116.2,
+        "tokens": 36116,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "format_has_required_fields",
+          "passed": false,
+          "evidence": "Output has title, price, and description but lacks the skill's required format: no emoji header, no '\u2014\u2014 seller notes \u2014\u2014' separator, no three-price breakdown (list/floor/garage-sale). Has pricing guidance (list $220, floor $180) but no garage-sale price."
+        },
+        {
+          "text": "price_in_realistic_au_range",
+          "passed": true,
+          "evidence": "List price $220 is within the realistic $100\u2013$400 AUD range for a 3-year-old Dyson V8 Animal with all attachments in AU."
+        },
+        {
+          "text": "mentions_melbourne_pickup",
+          "passed": true,
+          "evidence": "Description includes 'Cash or bank transfer on pickup. Pickup from Melbourne. No postage \u2014 local pickup only.'"
+        },
+        {
+          "text": "discloses_no_box",
+          "passed": true,
+          "evidence": "Description explicitly states 'No box \u2014 unit only with all tools.'"
+        },
+        {
+          "text": "handles_no_live_comps_correctly",
+          "passed": true,
+          "evidence": "Agent performed live Gumtree search and produced a comp table: Southbank $240, Ferntree Gully $119, Hampton $150, Rowville $350, Glenroy $199. Pricing anchored to live data."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 67.3,
+        "tokens": 28457,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "makita_gets_listing",
+          "passed": true,
+          "evidence": "Full listing copy produced with title ('Makita 18V Drill Kit \u2014 2 Batteries + Charger \u2014 Good Condition') and body copy. Price $150, accept $120."
+        },
+        {
+          "text": "billy_gets_listing",
+          "passed": true,
+          "evidence": "Full listing copy produced with title ('IKEA Billy Bookcase \u2014 White, 3 Shelf \u2014 Minor Chip \u2014 $40') and body copy. Price $40 firm."
+        },
+        {
+          "text": "dvds_not_listed_solo",
+          "passed": false,
+          "evidence": "DVDs are labeled 'MARGINAL, LIST AS BUNDLE' and listing copy is provided ('Box of 50 DVDs \u2014 Mixed Titles \u2014 $15 the Lot'). Although it's technically a bundle, listing copy was produced. The skill's fire-sale routing would have been a clearer 'don't list' with next actions only."
+        },
+        {
+          "text": "crt_not_listed",
+          "passed": true,
+          "evidence": "Correctly labeled 'DO NOT LIST'. Gave e-waste options: Officeworks FreedomRecycle, council e-waste, TechCollect. No listing produced."
+        },
+        {
+          "text": "fire_sale_items_have_next_best_action",
+          "passed": true,
+          "evidence": "DVDs: donate to op shop, nature strip free box. CRT: Officeworks, council e-waste, TechCollect. Both have concrete next actions."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.2,
+        "passed": 1,
+        "failed": 4,
+        "total": 5,
+        "time_seconds": 56.6,
+        "tokens": 27949,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "helmet_no_listing_produced",
+          "passed": false,
+          "evidence": "Full ad copy produced for the Bell helmet: 'Bell Mountain Bike Helmet \u2014 Near New, Worn ~5 Times' with complete listing body and price guidance ($30\u2013$60). No safety flag or refusal."
+        },
+        {
+          "text": "car_seat_no_listing_produced",
+          "passed": false,
+          "evidence": "Full ad copy produced for the Britax car seat with title and body, despite the safety warning section before it. Output says 'if all of the above are true, listing it is reasonable' and provides complete listing copy."
+        },
+        {
+          "text": "helmet_safety_reason_given",
+          "passed": false,
+          "evidence": "No safety reason given for the helmet. Output goes directly to pricing ($30\u2013$60) and listing copy. The AS/NZS expiry and impact history issue are not mentioned."
+        },
+        {
+          "text": "car_seat_safety_reason_given",
+          "passed": true,
+          "evidence": "Detailed safety warning produced for the car seat: crash history requirement, expiry date, Britax guidance, ACCC, platform rules (FB/Gumtree ban). This information is accurate and detailed, though a listing was still produced."
+        },
+        {
+          "text": "both_have_next_best_action",
+          "passed": false,
+          "evidence": "Helmet: no alternative route given, straight to listing. Car seat: mentions 'dispose of the seat responsibly' and council hard waste/Britax retailers if criteria not met \u2014 but this is conditional (only if criteria fail) rather than a primary recommendation."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 67.7,
+        "tokens": 28405,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "both_items_get_listings",
+          "passed": true,
+          "evidence": "Full listing copy for both: KitchenAid title + body, LG TV title + body. Both include price, key specs, and deadline."
+        },
+        {
+          "text": "urgent_pricing_applied",
+          "passed": true,
+          "evidence": "Strategy labeled 'urgent but not desperate'. KitchenAid priced $260 (below mid-market $200\u2013$350 range). TV priced $850. However, framing is '10\u201315% below mid-market' rather than 'at floor' \u2014 a softer urgency application than the with-skill version."
+        },
+        {
+          "text": "deadline_acknowledged",
+          "passed": true,
+          "evidence": "Both listings include 'Must go by Friday 23 May \u2014 I'm relocating.' and escalation pricing guidance for if Friday arrives with items unsold."
+        },
+        {
+          "text": "kitchenaid_price_realistic",
+          "passed": true,
+          "evidence": "$260 is within the $150\u2013$400 realistic AU range. Note: more aggressively priced than the with-skill version ($350), which may be more or less optimal depending on actual comps."
+        },
+        {
+          "text": "tv_price_realistic",
+          "passed": true,
+          "evidence": "$850 is within the $600\u2013$1400 realistic AU range for a 2019 LG OLED C9 65\" with original box."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 143.6,
+        "tokens": 30919,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "crack_disclosed_in_ad_body",
+          "passed": true,
+          "evidence": "Crack is prominent in the listing title ('Cracked Headband') and explicitly in the body under 'Known issue \u2014 please read before messaging' in both the FB Marketplace and Gumtree listings. Baseline also correctly leads with the defect rather than burying it."
+        },
+        {
+          "text": "listing_produced",
+          "passed": true,
+          "evidence": "Two full listing blocks produced (FB Marketplace and Gumtree variants). Item is listed with full disclosure, not refused."
+        },
+        {
+          "text": "price_reflects_damage",
+          "passed": true,
+          "evidence": "Recommended $75 (open at $90, floor $60). Live comps showed damage/parts units $20\u2013$65, working units $100\u2013$160. Baseline correctly positions at the lower end of functional units."
+        },
+        {
+          "text": "format_has_required_fields",
+          "passed": false,
+          "evidence": "Output uses markdown headings (## Facebook Marketplace Listing) not the skill's emoji header format. No '\u2014\u2014 seller notes (not for the ad) \u2014\u2014' separator. No three-price breakdown (target/floor/garage-sale) \u2014 has a 'Listing Tips' section instead. Format does not match the required block structure."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 32.6,
+        "tokens": 26245,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "cord_damage_flagged",
+          "passed": true,
+          "evidence": "Extensive legal framing: ACL liability, ACCC electrical safety, platform rules. Explains shock, short circuit, and fire risk clearly. Nick near the plug is identified as the highest-risk cord location."
+        },
+        {
+          "text": "no_normal_listing_produced",
+          "passed": true,
+          "evidence": "No listing produced. Output is structured as options (repair, parts, dispose). The baseline also correctly declined to write a ready-to-use listing."
+        },
+        {
+          "text": "next_best_action_given",
+          "passed": true,
+          "evidence": "Three concrete options: repair cord first (recommended), sell for parts with full disclosure, or e-waste via TechCollect/council. All with actionable next steps including specific e-waste resources."
+        },
+        {
+          "text": "repaired_value_estimated",
+          "passed": true,
+          "evidence": "Parts-only value given: 'expect well under $10'. Repair cost estimate given ($30\u201380 for cord replacement). Post-repair sale value not explicitly stated but 'you'll get a better price anyway' satisfies the OR condition (parts price given). Note: with-skill gives more specific post-repair value ($55\u201375) backed by live comps."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 115.6,
+        "tokens": 36590,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "bundle_recommendation_explicit",
+          "passed": true,
+          "evidence": "Output states 'Sell separately, not as a bundle.' clearly in the opening and in a summary table (Sell separately vs. Bundle all three vs. Bundle the two adult sets). Recommendation is unambiguous."
+        },
+        {
+          "text": "incomplete_set_flagged",
+          "passed": true,
+          "evidence": "Bugatti Chiron section explicitly flags missing pieces with detailed analysis: 'If they're structural or visible (engine components, body panels, unique Technic pieces), buyers will heavily discount.' Discount logic applied: no box (\u2212$50\u201380) + missing ~15 pieces (\u2212$80\u2013100) drives significant reduction from $425\u2013700 complete-set comps."
+        },
+        {
+          "text": "prices_given_for_surviving_items",
+          "passed": true,
+          "evidence": "Pricing table with Ask and Floor for all three: Police Station $185/$160, Bugatti Chiron $330/$250, Tower Bridge $300/$280. All three are priced."
+        },
+        {
+          "text": "tower_bridge_no_box_affects_price",
+          "passed": true,
+          "evidence": "Output notes 'Missing the box is a meaningful hit for Creator Expert sets'. Tower Bridge priced at $280\u2013320 vs sealed/new at $350\u2013550. Missing box impact explicitly stated and priced in."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 115.3,
+        "stddev": 107.2447,
+        "min": 34.8,
+        "max": 344.1
+      },
+      "tokens": {
+        "mean": 37325.2857,
+        "stddev": 5621.9443,
+        "min": 30986,
+        "max": 47849
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.7929,
+        "stddev": 0.2835,
+        "min": 0.2,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 85.6571,
+        "stddev": 39.8029,
+        "min": 32.6,
+        "max": 143.6
+      },
+      "tokens": {
+        "mean": 30668.7143,
+        "stddev": 4118.6439,
+        "min": 26245,
+        "max": 36590
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.21",
+      "time_seconds": "+29.6",
+      "tokens": "+6657"
+    }
+  },
+  "notes": []
+}

@@ -1,0 +1,35 @@
+{
+  "eval_id": 7,
+  "eval_name": "lego-bundle-vs-individual",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "bundle_recommendation_explicit",
+      "passed": true,
+      "evidence": "Output opens 'Sell separately. Do not bundle these three.' Explains rationale: different collector audiences, different buyer pools, bundling depresses Chiron and Tower Bridge values. Clear and unambiguous."
+    },
+    {
+      "text": "incomplete_set_flagged",
+      "passed": true,
+      "evidence": "Bugatti Chiron listing title reads 'LEGO Technic Bugatti Chiron 42083 — built & disassembled, ~15 pieces missing'. Description states 'Approximately 15 pieces missing (disclosed honestly — buyer should verify against inventory before purchasing)'. Seller notes flag missing pieces as a meaningful discount driver (~17% below comp) and advise Brickset inventory check. CRITICAL tip calls out that LEGO Technic buyers are 'meticulous counters'."
+    },
+    {
+      "text": "prices_given_for_surviving_items",
+      "passed": true,
+      "evidence": "Three full listing blocks produced: Police Station $230 ono, Bugatti Chiron $300 ono, Tower Bridge $320 ono. Each has target/floor/garage-sale in seller notes."
+    },
+    {
+      "text": "tower_bridge_no_box_affects_price",
+      "passed": true,
+      "evidence": "Seller notes state 'No box = significantly lower ceiling' and compare to sealed examples at $450–600. Tower Bridge priced at $320 vs Gumtree comp at $370 (which had no box OR instructions). The missing box impact is called out explicitly and priced in."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Clean 4/4. Skill produced three full copy-paste-ready listing blocks with accurate bundle recommendation, missing-pieces disclosure in the title/description, and no-box discount correctly applied. The with-skill output is immediately actionable as-is; the baseline required further work to produce actual listing text.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "eval_id": 6,
+  "eval_name": "vintage-camera",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "listing_produced",
+      "passed": true,
+      "evidence": "Full listing block produced: Pentax K1000 35mm SLR Film Camera + 50mm f/2 SMC Lens at $280 ono."
+    },
+    {
+      "text": "collector_audience_acknowledged",
+      "passed": true,
+      "evidence": "Description mentions 'still a favourite for film shooters'. Seller notes tip says 'Lead photo with the lens mounted and shutter cocked to show the shutter flag visible — film shooters know to look for this' and 'Expect a \"$220 pickup today?\" message; $230 is a fine yes. These sell well year-round to students and film revival buyers'. Clearly targets the film photography collector market."
+    },
+    {
+      "text": "working_condition_highlighted",
+      "passed": true,
+      "evidence": "Description opens with 'Classic Pentax K1000 fully mechanical SLR — shutter fires cleanly across all speeds, light meter reads accurately.' The tested working condition is the opening line and primary value driver."
+    },
+    {
+      "text": "format_has_required_fields",
+      "passed": true,
+      "evidence": "Output has: 🏷️ header, Title: line, Price: $280 ono line, Description: block, '—— seller notes (not for the ad) ——' separator, and '• Target: ~$250 | Floor: $210 | Garage sale: $130' three-price breakdown. All required fields present."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Clean 4/4. Skill correctly identified the collector audience, led with tested condition, produced a clean listing block in the required format with live-comp-backed pricing.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

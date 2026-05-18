@@ -1,0 +1,27 @@
+{
+  "eval_id": 7,
+  "eval_name": "lego-bundle-vs-individual",
+  "prompt": "I've got three LEGO sets to sell: City Police Station (set 60141, complete with box and instructions), Technic Bugatti Chiron (42083, built and then disassembled, missing about 15 pieces from memory), and Creator Expert Tower Bridge (10214, complete, no box but has instructions). Should I sell them as a bundle or separately? What should I ask?",
+  "assertions": [
+    {
+      "text": "bundle_recommendation_explicit",
+      "description": "Output makes a clear recommendation on whether to sell as a bundle or individually (not left ambiguous)"
+    },
+    {
+      "text": "incomplete_set_flagged",
+      "description": "The Technic Bugatti Chiron's missing pieces are flagged and affect its pricing/handling — it is not priced as a complete set"
+    },
+    {
+      "text": "prices_given_for_surviving_items",
+      "description": "Prices (list/target or full listing block) are given for the items that are worth listing"
+    },
+    {
+      "text": "tower_bridge_no_box_affects_price",
+      "description": "The Tower Bridge set missing its box is noted and reflected in the price — it is priced below what a complete boxed set would fetch"
+    },
+    {
+      "text": "format_has_required_fields",
+      "description": "Output produces copy-paste-ready listing blocks using the skill format: emoji header (🏷️), title line, price line, description, seller notes separator (—— seller notes), and three-price breakdown — not just a pricing table or analysis"
+    }
+  ]
+}

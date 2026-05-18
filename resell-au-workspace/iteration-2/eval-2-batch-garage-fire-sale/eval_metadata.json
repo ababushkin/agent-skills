@@ -1,0 +1,32 @@
+{
+  "eval_id": 2,
+  "eval_name": "batch-garage-fire-sale",
+  "prompt": "Clearing the garage. Got: a Makita drill (18V, good condition, 2 batteries + charger), a box of random DVDs (~50, mixed titles), an old CRT monitor (19 inch, works), and a IKEA Billy bookcase (white, 3 shelves, minor chip on one corner). What should I list and for how much?",
+  "assertions": [
+    {
+      "name": "makita_gets_listing",
+      "description": "A listing block or clear price recommendation is produced for the Makita drill (it is worth listing)",
+      "type": "qualitative"
+    },
+    {
+      "name": "billy_gets_listing",
+      "description": "A listing block or clear price recommendation is produced for the IKEA Billy bookcase (it is worth listing)",
+      "type": "qualitative"
+    },
+    {
+      "name": "dvds_not_listed_solo",
+      "description": "DVDs are NOT given a standalone listing — they are routed to bundle, garage-sale, donation, or curbside",
+      "type": "qualitative"
+    },
+    {
+      "name": "crt_not_listed",
+      "description": "CRT monitor is NOT given a listing — it is routed to e-waste, free pickup, or hard rubbish",
+      "type": "qualitative"
+    },
+    {
+      "name": "fire_sale_items_have_next_best_action",
+      "description": "Items that are not listed (DVDs, CRT) each get a concrete alternative recommendation (not just 'don't bother listing this')",
+      "type": "qualitative"
+    }
+  ]
+}

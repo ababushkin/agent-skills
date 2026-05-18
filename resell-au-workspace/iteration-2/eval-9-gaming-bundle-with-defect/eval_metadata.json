@@ -1,0 +1,23 @@
+{
+  "eval_id": 9,
+  "eval_name": "gaming-bundle-with-defect",
+  "prompt": "Selling a Nintendo Switch OLED. Comes with: the dock, 2 Joy-Con sets (but the left Joy-Con on one pair has drift — totally playable but noticeable), and 3 games in original boxes: Zelda Breath of the Wild, Mario Kart 8 Deluxe, Animal Crossing New Horizons. The console itself is in great shape, screen is perfect.",
+  "assertions": [
+    {
+      "text": "joy_con_drift_disclosed",
+      "description": "The Joy-Con drift is disclosed in the listing body — not just in seller notes"
+    },
+    {
+      "text": "price_reflects_drift",
+      "description": "The pricing accounts for the Joy-Con drift as a discount factor vs a fully working bundle"
+    },
+    {
+      "text": "games_listed",
+      "description": "The three games are listed in the ad (they add meaningful value and should be itemised)"
+    },
+    {
+      "text": "format_has_required_fields",
+      "description": "Output has: emoji header (🏷️), title line, price line, description block, seller notes separator (—— seller notes), and three-price breakdown (Target | Floor | Garage sale)"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "eval_id": 7,
+  "eval_name": "lego-bundle-vs-individual",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "bundle_recommendation_explicit",
+      "passed": true,
+      "evidence": "Output opens 'Sell separately. Do not bundle these three.' Explains rationale: different collector audiences, different buyer pools, bundling depresses Chiron and Tower Bridge values. Clear and unambiguous."
+    },
+    {
+      "text": "incomplete_set_flagged",
+      "passed": true,
+      "evidence": "Bugatti Chiron listing title reads 'LEGO Technic Bugatti Chiron 42083 — built & disassembled, ~15 pieces missing'. Description states 'Approximately 15 pieces missing (disclosed honestly — buyer should verify against inventory before purchasing)'. Seller notes flag missing pieces as a meaningful discount driver and advise Brickset inventory check."
+    },
+    {
+      "text": "prices_given_for_surviving_items",
+      "passed": true,
+      "evidence": "Three full listing blocks produced: Police Station $230 ono, Bugatti Chiron $300 ono, Tower Bridge $320 ono. Each has target/floor/garage-sale in seller notes."
+    },
+    {
+      "text": "tower_bridge_no_box_affects_price",
+      "passed": true,
+      "evidence": "Seller notes state 'No box = significantly lower ceiling' and compare to sealed examples at $450–600. Tower Bridge priced at $320 vs Gumtree comp at $370 (which had no box OR instructions). Missing box impact explicitly stated and priced in."
+    },
+    {
+      "text": "format_has_required_fields",
+      "passed": true,
+      "evidence": "Three listing blocks each have: emoji header (🏷️), Title: line, Price: line, Description: block, '—— seller notes (not for the ad) ——' separator, and three-price breakdown (Target | Floor | Garage sale). All required fields present across all three listings."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Clean 5/5 with the new format assertion added. All three listing blocks are copy-paste ready in the exact skill format.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  }
+}

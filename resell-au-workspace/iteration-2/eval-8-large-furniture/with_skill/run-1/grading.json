@@ -1,0 +1,35 @@
+{
+  "eval_id": 8,
+  "eval_name": "large-furniture",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "listing_produced",
+      "passed": true,
+      "evidence": "Full listing block produced: '🏷️ 3-Seater Dark Brown Leather Couch — $350' with complete description and seller notes."
+    },
+    {
+      "text": "arm_wear_disclosed",
+      "passed": true,
+      "evidence": "Description includes 'Some visible wear on the armrests (normal for a well-loved sofa)'. Seller notes tip says 'Take a close-up of the armrest wear and include it; buyers who see it upfront don't haggle as hard as those who discover it in person.' Flaw is disclosed in the listing body."
+    },
+    {
+      "text": "buyer_transport_noted",
+      "passed": true,
+      "evidence": "Description explicitly states 'Buyer must organise a ute or van — this is a heavy piece and cannot be carried in a sedan.' Seller notes tip also says 'List under \"Sofas\"... mention \"ute/van required\" in the title or first line so you don't waste time on buyers without a vehicle.' Transport requirement is prominent."
+    },
+    {
+      "text": "format_has_required_fields",
+      "passed": true,
+      "evidence": "Output has: 🏷️ header, Title: line, Price: $350 ono line, Description: block, '—— seller notes (not for the ad) ——' separator, and '• Target: ~$300 | Floor: $260 | Garage sale: $150' three-price breakdown. All required fields present."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Clean 4/4. Transport requirement clearly stated in the listing body, armrest wear disclosed upfront, correct format.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

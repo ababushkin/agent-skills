@@ -1,0 +1,35 @@
+{
+  "eval_id": 9,
+  "eval_name": "gaming-bundle-with-defect",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "joy_con_drift_disclosed",
+      "passed": true,
+      "evidence": "Description states 'note: the left Joy-Con on one pair has stick drift — totally playable but noticeable, disclosed upfront'. Drift is in the listing body, not only in seller notes."
+    },
+    {
+      "text": "price_reflects_drift",
+      "passed": true,
+      "evidence": "Seller notes say 'The drifting Joy-Con is disclosed and justifies pricing ~$30 below a clean equivalent — keeping you competitive without giving it away.' List price $450 ono vs clean bundle comps of $420–$480. Drift is explicitly factored in the rationale."
+    },
+    {
+      "text": "games_listed",
+      "passed": true,
+      "evidence": "Description lists all three games: 'Zelda Breath of the Wild, Mario Kart 8 Deluxe, and Animal Crossing New Horizons'. All three named in the listing body."
+    },
+    {
+      "text": "format_has_required_fields",
+      "passed": true,
+      "evidence": "Output has: 🏷️ Nintendo Switch OLED Bundle + 3 Games — $450, Title: line, Price: $450 ono line, Description: block, '—— seller notes (not for the ad) ——' separator, and '• Target: ~$410 | Floor: $370 | Garage sale: $220' three-price breakdown. All required fields present."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Clean 4/4. Drift disclosed in the listing body, pricing rationale explicitly accounts for it, games listed, correct format.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

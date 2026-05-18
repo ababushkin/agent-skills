@@ -1,0 +1,23 @@
+{
+  "eval_id": 8,
+  "eval_name": "large-furniture",
+  "prompt": "I want to sell my 3-seater leather couch — dark brown, about 6 years old. Good condition overall: no stains, no tears, but you can see some wear on the arm rests where everyone puts their arms. It's a fairly standard size. I'm in Melbourne's eastern suburbs (Box Hill area). It's quite heavy so buyer would need to organise a ute or van.",
+  "assertions": [
+    {
+      "text": "listing_produced",
+      "description": "A listing block is produced"
+    },
+    {
+      "text": "arm_wear_disclosed",
+      "description": "The arm rest wear is disclosed in the listing description — not hidden or downplayed"
+    },
+    {
+      "text": "buyer_transport_noted",
+      "description": "The listing or seller notes mention that the buyer needs to organise/arrange their own transport (ute, van, trailer)"
+    },
+    {
+      "text": "format_has_required_fields",
+      "description": "Output has: emoji header (🏷️), title line, price line, description block, seller notes separator (—— seller notes), and three-price breakdown (Target | Floor | Garage sale)"
+    }
+  ]
+}

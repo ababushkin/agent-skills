@@ -1,0 +1,35 @@
+{
+  "eval_id": 5,
+  "eval_name": "known-defect-disclosure",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "crack_disclosed_in_ad_body",
+      "passed": true,
+      "evidence": "Description section reads: 'Headband has cracked and is held together with electrical tape (cosmetic structural damage — pictured).' Flaw is in the public-facing ad copy, not just seller notes. Also appears in the title: 'great sound, cracked headband'."
+    },
+    {
+      "text": "listing_produced",
+      "passed": true,
+      "evidence": "Full listing block produced with emoji header '🏷️ Sony WH-1000XM3 Noise Cancelling Headphones — $90'. Item is not refused — it is listed with disclosure."
+    },
+    {
+      "text": "price_reflects_damage",
+      "passed": true,
+      "evidence": "Listed at $90 ono, target ~$80, floor $70. Live comps showed working XM3s with case at $100–$159. Seller notes explain the cracked/taped headband is 'a step below worn' — discount is applied and justified against comp range."
+    },
+    {
+      "text": "format_has_required_fields",
+      "passed": true,
+      "evidence": "Output has emoji header, title line, price line ($90 ono), description block, '—— seller notes (not for the ad) ——' separator, and Target ~$80 | Floor $70 | Garage sale $45 three-price breakdown. All required fields present."
+    }
+  ],
+  "pass_rate": 1.0,
+  "notes": "Clean 4/4. Defect prominently disclosed in both title and description body. Skill's instruction to 'state flaws up front' is followed precisely — seller tips even reinforce that burying the flaw causes no-shows.",
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}
