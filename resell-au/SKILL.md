@@ -84,21 +84,47 @@ Invoked when the user passes a path argument: `/resell-au ~/path/to/folder`
 2. Navigate to FB Marketplace and Gumtree AU in the attached Chrome and check
    for the login chrome. If not logged in, ask the user to log in once in the
    attached Chrome, then re-verify.
-3. List subfolders of the target path. Skip anything starting with `.` or `_`.
-   Report the items found (folder name = presumed item). If zero valid
-   subfolders, report politely and stop.
+3. **Discover and classify subfolders.**
+
+   **3a. List subfolders.** Skip anything starting with `.` or `_`.
+   If zero valid subfolders, report politely and stop.
+
+   **3b. Classify each subfolder** by reading its `listing.md` (if present).
+   Parse every line matching `**Platform:** <name>` in the file:
+
+   - No `listing.md` → `new` — queue for FB Marketplace + Gumtree AU
+   - `listing.md` has `**Platform:** Facebook Marketplace` only → `fb-listed` — queue for Gumtree AU only
+   - `listing.md` has `**Platform:** Gumtree AU` only → `gt-listed` — queue for FB Marketplace only
+   - `listing.md` has both platforms → `fully-listed` — excluded from all queues
+
+   **3c. Report the classification table before proceeding:**
+
+   | Item | Status | Action |
+   |------|--------|--------|
+   | kettlebell | new | list on FB + Gumtree |
+   | dyson-v8 | fb-listed | list on Gumtree only |
+   | ikea-shelf | fully-listed | skip — already on both platforms |
+
+   If every item is `fully-listed`, tell the user all items are already listed and stop.
+   Otherwise proceed with only the items that have at least one platform pending.
 
 ### Phase 1 — Per-item draft (loop over subfolders)
 
 For each subfolder, one item at a time:
 
-- Read all image files (vision). Draft: probable item / brand / model / visible
-  condition / visible accessories / visible flaws.
-- Output a tight summary block and ask **one batched question** per item to
+- **If the subfolder has a `listing.md`:** Read the `## Ad copy` and
+  `## Seller notes` sections and pre-populate the draft from them. Output the
+  pre-filled block marked `[pre-filled from prior listing]` and skip asking
+  the user to re-describe the item. Jump straight to pricing in Phase 2 using
+  the stored Target/Floor/Garage-sale figures from seller notes. Only ask the
+  user if something is genuinely missing from the prior record.
+- **Otherwise:** Read all image files (vision). Draft: probable item / brand /
+  model / visible condition / visible accessories / visible flaws.
+  Output a tight summary block and ask **one batched question** per item to
   fill gaps the photos can't answer: exact model (if uncertain), age, anything
   not pictured (charger? manual? box?), known flaws not visible, suburb for
   pickup line, and any strategy override ("need it gone today" / "push it").
-- User responds. Update the draft.
+  User responds. Update the draft.
 
 ### Phase 2 — Pricing (after all items drafted)
 
@@ -118,6 +144,14 @@ For each subfolder, one item at a time:
 ### Phase 4 — Auto-list (per item, per platform)
 
 For each surviving item, then for each of [Facebook Marketplace, Gumtree AU]:
+
+**Pre-loop gate:** Before navigating, read `<item_subfolder>/listing.md` (if
+present). If the file contains a `**Platform:** <current platform>` line,
+skip this platform — do not navigate or fill any form. Record
+`{ status: "skipped", reason: "already-listed" }` in the run-state JSON and
+log: *"Skipping [item] on [Platform] — already listed (`listing.md` found)."*
+This gate runs even if Phase 0 already classified the item, to catch edge
+cases such as manual `listing.md` edits or an interrupted prior run.
 
 1. Navigate to the create-listing URL.
 2. Snapshot the page (accessibility tree via `take_snapshot`). Never rely on
@@ -190,8 +224,8 @@ Rules for this file:
 
 ### Phase 5 — Summary
 
-- Output a final table: per item × per platform → posted / skipped / failed
-  (with reason).
+- Output a final table: per item × per platform → posted / skipped (already
+  listed) / skipped (sub-$15) / failed (with reason).
 - Write a run-state file at
   `<target_folder>/.resell-au-run-<YYYYMMDD-HHMM>.json` containing per-item
   status, prices, ad copy, and `listing_md_path`. Lets a subsequent run
