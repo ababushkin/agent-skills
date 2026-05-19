@@ -1,19 +1,17 @@
 ---
 name: resell-au-tracker
 description: >-
-  Sync items from resell-au listing.md files into the sales tracker page
-  (~/Desktop/things-for-sale/tracker.html). Use when the user says "sync
+  Sync items from resell-au listing.md files into tracker.json
+  (~/Desktop/things-for-sale/tracker.json). Use when the user says "sync
   tracker", "update the tracker", "add my listings to the tracker", or after
   the resell-au skill has published new listings. Non-destructive: never
-  modifies existing rows or sold prices. Generates tracker.html first if it
-  doesn't exist. Requires Chrome running with --remote-debugging-port=9222
-  (same setup as the resell-au skill).
+  modifies existing rows or sold prices.
 ---
 
 # Resell AU — Tracker Sync
 
 Scan `~/Desktop/things-for-sale/` for published listings and add any new items
-to the sales tracker page without touching rows that already exist.
+to `tracker.json` without touching rows that already exist.
 
 ---
 
@@ -33,70 +31,35 @@ Include listings where `**Status:**` is `Published` or `Sold` — both represent
 items that were live. Skip `Draft`, `Skipped`, and `Not listed`.
 
 If the price cannot be parsed as a number, skip that item and include it in
-the Step 6 report as "skipped — unparseable price".
+the Step 4 report as "skipped — unparseable price".
 
-### Step 2 — Ensure tracker.html exists
+### Step 2 — Read tracker.json
 
-Check if `~/Desktop/things-for-sale/tracker.html` exists.
+Read `~/Desktop/things-for-sale/tracker.json`.
 
-If it **does not exist**: write the standard tracker template to that path.
-The template source is embedded at the bottom of this skill file.
+If the file **does not exist**, treat existing items as an empty array `[]`.
+Do not create the file yet — only write it in Step 3.
 
-### Step 3 — Open tracker in Chrome DevTools MCP
+Build a set of existing item names (lowercased, trimmed) for deduplication.
 
-Use the Chrome DevTools MCP (Chrome must be running with `--remote-debugging-port=9222`
-— same Chrome used by the resell-au skill). Open a new tab:
+### Step 3 — Write missing items
 
-```
-new_page: file:///Users/<your-username>/Desktop/things-for-sale/tracker.html
-```
-(Expand `~` to an absolute path when constructing the `file://` URL.)
+For each item from Step 1 whose name (lowercased, trimmed) is not already in
+the tracker, append a new object:
 
-Wait for the page to initialise, then verify the API is ready:
-
-```js
-// evaluate_script
-() => typeof window.addItem === 'function'
-```
-
-Should return `true`. If not, issue a second `evaluate_script` call after a
-short pause (e.g. a no-op script to let the event loop tick) and retry once.
-If still not ready, surface an error and stop.
-
-**Note:** Playwright blocks `file://` URLs, so use Chrome DevTools MCP here.
-If Chrome is not attached, ask the user to open Chrome with remote debugging
-first (same prerequisite as the resell-au skill — see `resell-au/references/chrome-setup.md`).
-
-### Step 4 — Read current state
-
-```js
-// evaluate_script
-() => {
-  const raw = localStorage.getItem('sales-tracker');
-  return JSON.parse(raw || '[]').map(r => r.name.trim().toLowerCase());
+```json
+{
+  "id": "<8-char hex, e.g. from python3 -c \"import uuid; print(uuid.uuid4().hex[:8])\">",
+  "name": "<full title string from listing.md>",
+  "listed": "<price as string, digits only>",
+  "sold": ""
 }
 ```
 
-This returns the list of existing item names (lowercased) to deduplicate against.
+Write the updated array back to `tracker.json` (pretty-printed, 2-space indent).
+If no items were added, skip the write.
 
-### Step 5 — Add missing items
-
-For each item parsed in Step 1, call evaluate_script:
-
-```js
-// evaluate_script  — construct one call per item, baking values as literals
-() => window.addItem('Kettlebell 20kg', '45')
-```
-
-The string values for name and price must be baked directly into the function
-body as string literals — `evaluate_script` runs in the page context and cannot
-close over agent-side variables. Construct a separate `evaluate_script` call
-for each item.
-
-`window.addItem` returns `true` if added, `false` if duplicate. Collect
-results for the summary.
-
-### Step 6 — Report
+### Step 4 — Report
 
 Output a table:
 
@@ -105,8 +68,8 @@ Output a table:
 | Kettlebell | $45 | yes |
 | IKEA Chair | $80 | already in tracker |
 
-State the tracker path so the user can open it:
-`~/Desktop/things-for-sale/tracker.html`
+Remind the user to click **Open** in tracker.html and select `tracker.json`
+to reload the updated data.
 
 ---
 
@@ -118,14 +81,12 @@ State the tracker path so the user can open it:
   the first space following the number.
 - **Title extraction**: `**Title:** Weber Q1200 Portable Gas BBQ — works great`
   → use the full title string as the item name in the tracker.
-- **No browser already open**: if Chrome DevTools is not reachable and
-  Playwright is unavailable, surface the error and stop. Do not attempt to
-  write to localStorage directly — always go through the browser so the page's
-  own persistence logic runs.
 
----
+## tracker.html template (obsolete — kept for reference only)
 
-## tracker.html template
+The actual tracker.html already exists and has Open/Save buttons for
+tracker.json. Do not recreate it. The template below is kept only in case
+tracker.html is ever lost.
 
 If `tracker.html` does not exist, write this verbatim to
 `~/Desktop/things-for-sale/tracker.html`:
