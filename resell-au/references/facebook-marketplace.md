@@ -124,14 +124,13 @@ These are not in the accessibility tree docs. Each was found through a failed
 attempt during a real run; baked in here to avoid repeating them.
 
 - **Title and price fields append, not replace.** `fill()` appends to the
-  existing placeholder or previous value. Always JS-clear first:
-  ```js
-  const el = document.querySelector('input[placeholder="Title"]');
-  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-  nativeInputValueSetter.call(el, '');
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-  ```
-  Then call `fill()` as normal.
+  existing placeholder or previous value. The native value setter approach
+  throws "Illegal invocation" on FB's React fiber. Use this sequence instead:
+  1. `click(uid)` — focus the field
+  2. `press_key("ctrl+a")` — select all existing content
+  3. `fill(value)` — type the new value (replaces selection)
+  4. `evaluate_script` to read back the field value and confirm it matches.
+  If the readback doesn't match, repeat once before escalating.
 
 - **Description textarea requires click then type_text.** `fill()` alone does
   not persist in the Sports & Outdoors (and some other) category forms.
@@ -145,12 +144,16 @@ attempt during a real run; baked in here to avoid repeating them.
   first suggestion.
 
 - **Photos must be in an MCP-accessible path.** The `upload_file` MCP tool
-  only allows files within the workspace root. If photos are on the Desktop or
-  any path outside the workspace, copy them to `/tmp/` first:
+  only allows files within the workspace roots. `/tmp/` is NOT accessible —
+  it will return "Access denied". Use the system temp dir instead:
   ```bash
-  cp /path/to/photo.jpg /tmp/photo.jpg
+  cp /path/to/photo.jpg /var/folders/jd/9__6t9p9725glsmql48869lh0000gn/T/photo.jpg
   ```
-  Then pass the `/tmp/` path to `upload_file`.
+  The accessible temp path is discovered in Phase 0: run `evaluate_script`
+  with `os.tmpdir()` or check the MCP workspace roots list for a path matching
+  `/var/folders/*/T`. Store it in the run-state for the whole run. If the
+  path is unknown, copy a test file and confirm the upload succeeds before
+  staging all photos.
 
 - **Post-publish success signal.** After clicking Publish, FB navigates to the
   listing detail page — URL will contain `/marketplace/item/<id>`. Use

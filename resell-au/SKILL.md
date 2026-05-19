@@ -134,8 +134,14 @@ For each subfolder, one item at a time:
 
 ### Phase 3 — Generate ad copy
 
-- Produce the copy-paste block per surviving item. Show all blocks. User can
-  edit titles/descriptions inline before listing begins.
+- Produce the copy-paste block per surviving item. Show all blocks.
+- **Pricing floor gate.** Before proceeding to Phase 4, ask once:
+  *"Is there a minimum you'd accept for any of these? I'll lock it in as the
+  hard floor before I start posting."* If the user sets a floor higher than
+  the current list price, update the list price to match (don't post below the
+  user's stated minimum). If no response or "no changes", proceed.
+- User can also edit titles/descriptions inline at this point before listing
+  begins.
 
 ### Phase 4 — Auto-list (per item, per platform)
 
@@ -219,10 +225,41 @@ Rules for this file:
 
 - Output a final table: per item × per platform → posted / skipped (already
   listed) / skipped (sub-$15) / failed (with reason).
-- Write a run-state file at
-  `<target_folder>/.resell-au-run-<YYYYMMDD-HHMM>.json` containing per-item
-  status, prices, ad copy, and `listing_md_path`. Lets a subsequent run
-  resume after a captcha-pause, browser crash, or user interruption.
+
+**Run-state file — write at Phase 3, update throughout:**
+
+Write `<target_folder>/.resell-au-run-<YYYYMMDD-HHMM>.json` immediately after
+Phase 3 with all items at `pending`. Update each item's status as Phase 4
+proceeds. This means an interrupted run can be resumed:
+
+**On any restart (context loss, `/compact`, crash):** read the run-state JSON
+first. Items already at `posted` are skipped — do not re-navigate or re-fill.
+Resume from the first item still at `pending` or `failed`.
+
+Schema:
+```json
+{
+  "run_started": "ISO 8601 timestamp",
+  "target_folder": "/path/to/folder",
+  "temp_path": "/var/folders/.../T",
+  "items": [
+    {
+      "subfolder": "item-name",
+      "title": "Ad title",
+      "list_price": 140,
+      "floor": 110,
+      "garage_sale": 70,
+      "ad_copy": "Full description text",
+      "photos": ["photo1.jpg", "photo2.jpg"],
+      "platforms": {
+        "facebook_marketplace": "posted | skipped | failed | pending"
+      },
+      "listing_url": "https://www.facebook.com/marketplace/item/<id>/",
+      "listing_md_path": "/path/to/item/listing.md"
+    }
+  ]
+}
+```
 
 ---
 
