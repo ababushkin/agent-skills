@@ -47,14 +47,50 @@ anchor to those instead — they already price in depreciation and demand.
 - **Exercise equipment (treadmills, multi-gyms):** notoriously hard to sell,
   bulky; often free-pickup territory unless premium brand and near-new.
 
+## What counts as a valid comp
+
+The 4-layer search protocol that produces comps lives in
+`live-comp-search.md`. This section is the rule set for **what to keep** once
+you have results. The same rules apply to every layer; differences are noted
+inline.
+
+- **Recency.** eBay sold listings ≤ 60 days old. Gumtree cards: exclude any
+  showing "Posted >30 days ago" (those are listings that didn't sell). FB
+  Marketplace live is current by definition.
+- **Condition match.** Prefer same-tier comps. One tier away is fine without
+  adjustment. Two tiers away counts only as a last signal, with a tier-step
+  adjustment derived from the condition ladder above. Unknown-condition comps
+  → treat as "good" but mark `condition: unknown` in the record.
+- **Title match.** Brand token + item-type token both required. Reject
+  same-brand-different-product (e.g. adult Mongoose mountain bike when pricing
+  a kids' 20" Mongoose). Same item-type-different-brand only when the user's
+  item is unbranded.
+- **Outlier trim** (eBay sold, primarily):
+  - n ≥ 10 → trim top and bottom 10th percentile before computing median.
+  - 3 ≤ n < 10 → drop one extreme outlier if it's >2× median or <0.5× median.
+  - n < 3 → keep all, but downstream `comp_confidence` is `"low"`.
+- **Free listings ($0) excluded** everywhere.
+- **Asking → sold gap.** When the anchor is asking-only (no Layer 1 sold
+  data), multiply asking median by **0.80** to approximate realised price.
+  20% gap is the AU-wide rule of thumb; revisit once we have ≥10 same-item
+  observations of both sold and asking.
+
 ## AU market norms to bake into advice
 
 - **Channels:** Facebook Marketplace = highest volume + most lowballers/no-shows.
   Garage sale = instant cash, no messaging, deep discounts expected.
-- **FB Marketplace pricing anchor:** Price at or just below the **lowest**
-  listed comparable in equal-or-better condition, not the median. Buyers on FB
-  scroll through multiple listings and message the cheapest one first. Being
-  the cheapest clearly-good listing is the strategy.
+- **Sold beats asking, every time.** eBay AU sold listings
+  (`LH_Sold=1&LH_Complete=1`) are the **primary anchor** — the only signal
+  that reflects actual realised AU prices. FB Marketplace and Gumtree show
+  what sellers *want*, not what items go for. Use asking medians as the
+  competitor set / ceiling, not as the target. Full protocol:
+  `live-comp-search.md`.
+- **FB Marketplace pricing anchor:** Once the target is anchored on sold data,
+  price the **list** at or just below the lowest equal-condition FB asking
+  comp. Buyers on FB scroll through multiple listings and message the
+  cheapest clearly-good one first. Being the obvious-value pick is the
+  strategy — but the value is judged against sold, not against other asking
+  listings.
 - **Haggling is the default.** Listing "ono" or "open to offers" gets more
   contacts; "firm" filters but reduces them. First message is almost always a
   lowball — the floor figure is the user's pre-decided "yes".
@@ -71,8 +107,17 @@ anchor to those instead — they already price in depreciation and demand.
 
 ## Sanity checks before finalising a price
 
-- Is the list price *below the cheapest equal-condition comp*? If not, the
-  buyer just buys the other one. Balanced strategy = be the value pick.
+- **n ≥ 3 sold comps post-trim?** If not, `comp_confidence` drops to `"low"`
+  and the agent says so plainly in seller notes (e.g. *"Anchor: asking-only —
+  no recent AU sold data."*). Don't quietly publish a low-confidence price as
+  if it were strong.
+- **Sold-median vs asking-median sanity:**
+  - `sold_median < 0.6 × asking_median` → market has softened since the sold
+    window; keep the sold anchor but flag for human review.
+  - `sold_median > 1.1 × asking_median` → current asking market undercuts the
+    sold window; drop target to `asking_median × 0.95`.
+- Is the list price *below the cheapest equal-condition asking comp*? If not,
+  the buyer just buys the other one. Balanced strategy = be the value pick.
 - Would *you* drive across Melbourne to buy this at that price? If no, drop it.
 - Is the floor a real number the user can say "yes" to instantly when the
   lowball arrives? It should be.

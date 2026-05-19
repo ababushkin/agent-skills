@@ -51,14 +51,25 @@ For each item typed or pasted:
    unclear and it materially changes the price, ask **one** tight question —
    otherwise proceed and state your assumption in the block.
 
-2. **Search live comparables.** Required every time. Run 1–3 searches for what
-   the same/similar item is *currently listed for, secondhand, in Australia*.
-   Good patterns:
-   - `<brand model> facebook marketplace australia`
-   - `<brand model> ebay australia` (sold/used, not new RRP)
-   - For generics: `used <item type> price australia`
-   Anchor to **secondhand AU asking prices**, not US prices or new RRP. If
-   comps are thin, widen to nearest equivalent and say so.
+2. **Search live comparables (4-layer protocol).** Required every time.
+   Full protocol in `references/live-comp-search.md`. Short version:
+   - **Layer 1 — eBay AU sold listings (primary anchor):**
+     `https://www.ebay.com.au/sch/i.html?_nkw=<keywords>&LH_Sold=1&LH_Complete=1&_ipg=60`
+     Sold-only, last 60 days. **Always run.** Capture median / min / max /
+     count / search URL.
+   - **Layer 2 — FB Marketplace live (asking competitor set):** browser-only
+     (client-rendered). Skip if Chrome on port 9222 isn't attached — record
+     `skipped_reason: "no_browser_session"`. Skip if Layer 1 is strong AND
+     item < $30.
+   - **Layer 3 — Gumtree AU (asking fallback):**
+     `https://www.gumtree.com.au/s-.../melbourne-region/<keywords>/k0c<cat>l3001317`
+     Run when Layer 1 is weak (n<3) or Layer 2 returned <3.
+   - **Layer 4 — Google snippet fallback:** old patterns
+     (`<brand model> facebook marketplace australia`, etc.). Only when
+     Layers 1–3 combined yield <3 comps. Auto-downgrades confidence to `"low"`.
+
+   Anchor pricing on **sold median** (Layer 1) when n≥3 post-trim. Fall-through
+   in the next step.
 
 3. **Set the numbers.** Produce three figures (see Pricing model section):
    list price, floor (walk-away), and garage-sale price.
@@ -124,13 +135,46 @@ For each subfolder, one item at a time:
 
 ### Phase 2 — Pricing (after all items drafted)
 
-- For each item, run the existing pricing logic verbatim (live-comp search,
-  condition ladder, balanced strategy, list/floor/garage-sale).
-- Present **all** prices as a table so the user can sanity-check the batch.
-  User approves or edits inline.
-- Fire-sale / don't-bother rules still apply. Sub-~$15 items are routed to
-  "bundle / garage-sale / bin" and **dropped from the auto-listing queue**,
-  with the user's explicit confirmation before proceeding.
+1. **Announce the run.** Tell the user: *"Searching live comps for N items
+   (~40 s/item, ~Ns total)…"*
+
+2. **For each item, run the 4-layer comp-search protocol** in
+   `references/live-comp-search.md`:
+   - Layer 1 (eBay AU sold) + Layer 3 (Gumtree AU) — plain GETs, back-to-back.
+   - Layer 2 (FB Marketplace live) — browser-driven, reusing a single search
+     tab on the attached Chrome. 8–15 s random pause between FB searches.
+     Cap **20 FB searches per run** — folders >20 items batch into a second
+     run with ≥30 min gap.
+   - Layer 4 (Google snippet) — only when 1–3 combined yield <3 comps.
+   Capture every layer's results (or `skipped_reason`) into the per-item
+   `comps` block of the run-state JSON. Same `comps` data is written to
+   `listing.md` later in Phase 4 Step 7.
+
+3. **Anchor target** using fall-through rules:
+
+   | Layer 1 sold n (post-trim) | Pricing anchor |
+   |---|---|
+   | ≥ 3 | `sold_median` |
+   | 1–2 | blended: `0.7 × sold_median + 0.3 × asking_median × 0.80` |
+   | 0 | `asking_median × 0.80` (apply asking→sold gap) |
+
+   Then run the rest of the pricing model (condition adjustment, balanced
+   strategy, list / floor / garage-sale).
+
+4. **Present a pricing table** for the user to sanity-check the batch.
+   Include two new columns:
+
+   | Item | Target | List | Floor | Garage | **Anchor** | **Confidence** |
+   |---|---|---|---|---|---|---|
+   | bike | $75 | $85 | $65 | $40 | eBay sold $72 (n=8) | high |
+   | violin | $90 | $100 | $75 | $45 | blended ($95 sold n=2 + $115 asking n=4) | medium |
+   | ikea-rugs | $40 | $45 | $35 | $20 | asking-only ($55 asking n=6) | low |
+
+   User approves or edits inline.
+
+5. **Fire-sale / don't-bother rules** still apply. Sub-~$15 items are routed
+   to "bundle / garage-sale / bin" and **dropped from the auto-listing queue**,
+   with the user's explicit confirmation before proceeding.
 
 ### Phase 3 — Generate ad copy
 
@@ -221,8 +265,26 @@ Write this exact template to `<item_subfolder>/listing.md` in Phase 4 Step 7:
 ## Seller notes
 
 - Target: ~$<target> | Floor: $<floor> | Garage sale: $<garage_sale>
-- Comps: <comp range and source>
+- Comp confidence: <high | medium | low>
+- Anchor: <sold_median | blended | asking-only>
 - Tips: <0-2 tips>
+
+## Comps (captured <YYYY-MM-DD>)
+
+### eBay AU sold (primary)
+- Median: $X | Range: $a–$b | n=N | Window: 60d
+- Search: <URL>
+
+### FB Marketplace live (asking)
+- Median: $X | Range: $a–$b | n=N
+- Query: "<keywords>"
+
+### Gumtree AU (asking)
+- Median: $X | Range: $a–$b | n=N
+- Search: <URL>
+
+### Fallback notes
+<only present when Layer 4 ran>
 ```
 
 Rules for this file:
@@ -234,6 +296,11 @@ Rules for this file:
   `timeout_manual` and the user did not paste a URL, omit the line entirely
   rather than writing a placeholder — a missing line is the signal that the
   URL was not captured.
+- **`## Comps` section** is populated from the run-state `comps` block
+  captured in Phase 2. Skipped or zero-result layers **keep the heading** and
+  write `- skipped (<reason>)` or `- 0 results` — auditability requires the
+  agent shows what it tried. `<reason>` values are listed in
+  `references/live-comp-search.md`.
 
 ### Phase 5 — Summary
 
@@ -265,6 +332,15 @@ Schema:
       "garage_sale": 70,
       "ad_copy": "Full description text",
       "photos": ["photo1.jpg", "photo2.jpg"],
+      "comps": {
+        "captured_at": "ISO 8601",
+        "confidence": "high | medium | low",
+        "anchor_source": "sold_median | blended | asking_only",
+        "ebay_sold":      { "median": 72, "min": 55, "max": 110, "count": 8, "window_days": 60, "search_url": "...", "skipped_reason": null },
+        "fb_marketplace": { "median": 95, "min": 80, "max": 140, "count": 6, "query": "...", "skipped_reason": null },
+        "gumtree":        { "median": 85, "min": 70, "max": 110, "count": 4, "search_url": "...", "skipped_reason": null },
+        "google_fallback": { "ran": false, "notes": null }
+      },
       "platforms": {
         "facebook_marketplace": "posted | skipped | failed | pending"
       },
@@ -276,32 +352,54 @@ Schema:
 }
 ```
 
+The `comps` block is written in **Phase 2** before Phase 4 ever runs. Every
+sub-source key is always present — `skipped_reason` records why a layer
+didn't run. Full layer semantics and `skipped_reason` values live in
+`references/live-comp-search.md`.
+
 ---
 
 ## Pricing model
 
-Start from the **median current secondhand AU asking price** for the same item
-in similar condition. Then:
+Anchor on **sold data, not asking data**. Run the 4-layer comp-search
+protocol (`references/live-comp-search.md`) first, then:
 
-- Apply the condition adjustment (see `references/pricing-reference.md` for
-  per-category depreciation and the condition ladder).
-- **Balanced strategy:** set the **list price ~10–15% above your honest
-  target** so there's room for the near-universal "will you take $X?" message,
-  but stay *below* the cheapest comparable in equal-or-better condition.
-  Being the obvious-value pick is what makes it sell. If you're already the
-  cheapest comp, don't inflate; price at target and note it's priced to move.
-- **Floor** = honest target minus ~10%. The user's mental walk-away, not
-  advertised.
-- **Garage sale price** ≈ 40–60% of the Marketplace list price, rounded hard.
-  Impulse cash sale; price it so someone grabs it without thinking.
-- **Round like a real seller.** Under $30 → whole dollars ($15, $25).
-  $30–$200 → nearest $5 ($45, $120). Over $200 → nearest $10/$25 ($350, $1,250).
-  Avoid $.99 pricing — reads as retail/scammy. Clean numbers get more bites.
-- State a one-line **rationale** with the comp range you saw.
+1. **Target = sold_median** (eBay AU sold, post-trim) when `n ≥ 3`. Apply
+   the condition adjustment only if comps don't match the item's tier (see
+   `references/pricing-reference.md` for the condition ladder).
 
-If the user overrode the default strategy ("I need this gone today" or "push
-it"): "gone today" → price at/below floor, skip haggle margin; "push it" →
-top of comp range, minimal flexibility.
+2. **Fall-through anchor** when Layer 1 is thin:
+
+   | Layer 1 sold n (post-trim) | Anchor |
+   |---|---|
+   | ≥ 3 | `sold_median` (anchor_source: `sold_median`, confidence: `high`) |
+   | 1–2 | `0.7 × sold_median + 0.3 × asking_median × 0.80` (anchor_source: `blended`, confidence: `medium`) |
+   | 0 | `asking_median × 0.80` (anchor_source: `asking_only`, confidence: `low`) |
+
+3. **Sanity-check sold against asking medians:**
+   - `sold_median < 0.6 × asking_median` → market has softened; keep the sold
+     anchor but flag for human review.
+   - `sold_median > 1.1 × asking_median` → current asking undercuts the sold
+     window; drop target to `asking_median × 0.95`.
+
+4. **Balanced strategy** (unchanged): list price ~10–15% above target so
+   there's haggle room, but stay *below* the cheapest equal-or-better-condition
+   FB asking comp. Being the obvious-value pick is what makes it sell.
+
+5. **Floor** = target × 0.90. User's mental walk-away — not advertised.
+
+6. **Garage sale price** ≈ 40–60% of list. Impulse cash sale, rounded hard.
+
+7. **Round like a real seller.** Under $30 → whole dollars ($15, $25).
+   $30–$200 → nearest $5 ($45, $120). Over $200 → nearest $10/$25 ($350,
+   $1,250). Avoid $.99 pricing — reads as retail/scammy.
+
+8. **Rationale string** required in seller-notes block: name the anchor and
+   the source. e.g. *"Anchored on eBay sold median ($72, n=8, 60-day window);
+   FB asking $80–$140 confirms list is below cheapest comp."*
+
+Strategy overrides (unchanged): "gone today" → price at/below floor, skip
+haggle margin. "push it" → top of comp range, minimal flexibility.
 
 ---
 
@@ -321,7 +419,8 @@ payment.>
 
 —— seller notes (not for the ad) ——
 • Target: ~$<honest target>  |  Floor: $<walk-away>  |  Garage sale: $<gs price>
-• Why: <comp range seen, e.g. "Similar ones listed $90–$140 on FB Marketplace; yours is good condition with the box">
+• Comp confidence: <high | medium | low>  |  Anchor: <sold_median | blended | asking-only>
+• Why: <rationale naming layer + numbers, e.g. "eBay sold median $72 (n=8, 60d); FB asking $80–$140 confirms list is below cheapest comp">
 • Tips: <0–2 quick selling tips if relevant — bundle suggestion, best photo, expected lowball, listing category, season timing>
 ```
 
@@ -398,8 +497,12 @@ These apply in Folder Mode. They are hard rules — not suggestions.
 ## Reference files
 
 - `references/pricing-reference.md` — condition ladder, per-category
-  depreciation, AU market norms. Read when an item's category is non-obvious
-  or you need a sharper depreciation anchor.
+  depreciation, AU market norms, what counts as a valid comp. Read when an
+  item's category is non-obvious or you need a sharper depreciation anchor.
+- `references/live-comp-search.md` — the 4-layer comp-search protocol
+  (eBay AU sold → FB Marketplace live → Gumtree AU → Google fallback),
+  exact URL templates, FB browser-navigation sequence, run-budget rules.
+  **Read in Phase 2 before pricing any item.**
 - `references/chrome-setup.md` — one-time Chrome attach setup (dedicated
   Chrome instance, `--remote-debugging-port=9222`, login once). Read in Phase 0
   when Chrome is not reachable.
@@ -417,7 +520,8 @@ These apply in Folder Mode. They are hard rules — not suggestions.
 User: *"Selling my old Weber Q1200 BBQ, works fine, a bit of rust on the
 stand, no gas bottle."*
 
-After searching FB Marketplace AU for used Weber Q1200:
+After running the 4-layer comp protocol (eBay AU sold + Gumtree AU + Google
+fallback — no browser in Text Mode unless attached):
 
 ```
 🏷️ Weber Q1200 Portable BBQ — $140
@@ -434,8 +538,9 @@ Pickup [your suburb], cash or PayID on collection.
 
 —— seller notes (not for the ad) ——
 • Target: ~$130  |  Floor: $110  |  Garage sale: $70
-• Why: Used Q1200s listed $120–$180 on FB Marketplace AU; yours discounted for
-  the rust + no bottle, still within range and the cheapest clean option.
+• Comp confidence: high  |  Anchor: sold_median
+• Why: eBay AU sold median $135 (n=11, 60-day window); Gumtree asking
+  $140–$180 confirms list is below the cheapest clean comp.
 • Tips: Lead photo with lid up showing clean burner. Expect a "$100 today?"
   message — $110 is your yes. Sells fastest Sept–Dec (BBQ season).
 ```

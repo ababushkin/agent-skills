@@ -10,6 +10,11 @@ It is the generic orchestration layer; platform-specific field maps live in
 - User is logged in to Facebook Marketplace in the attached Chrome.
 - All items have been drafted, priced, and ad copy approved (Phases 1–3).
 
+The same Chrome session is also used in **Phase 2** for FB Marketplace
+comp search (Layer 2 in `live-comp-search.md`). A Marketplace search tab may
+remain open from Phase 2 when Phase 4 begins — leave it alone; Phase 4
+navigates a separate tab to the create-listing URL.
+
 ## The loop (one item, one platform)
 
 ### Step 1 — Navigate
@@ -143,7 +148,9 @@ Never skip these delays. Burst posting is the primary detection trigger.
 
 ## Stop-the-line conditions
 
-Stop the loop immediately and surface the issue to the user if:
+These apply to both **Phase 4 listing creation** (the loop above) and
+**Phase 2 comp search** (Layer 2 in `live-comp-search.md`). Stop the loop
+immediately and surface the issue to the user if:
 
 | Condition | Action |
 |---|---|
@@ -177,6 +184,15 @@ Schema:
       "garage_sale": 70,
       "ad_copy": "Full description text",
       "photos": ["photo1.jpg", "photo2.jpg"],
+      "comps": {
+        "captured_at": "ISO 8601",
+        "confidence": "high | medium | low",
+        "anchor_source": "sold_median | blended | asking_only",
+        "ebay_sold":      { "median": 72, "min": 55, "max": 110, "count": 8, "window_days": 60, "search_url": "...", "skipped_reason": null },
+        "fb_marketplace": { "median": 95, "min": 80, "max": 140, "count": 6, "query": "...", "skipped_reason": null },
+        "gumtree":        { "median": 85, "min": 70, "max": 110, "count": 4, "search_url": "...", "skipped_reason": null },
+        "google_fallback": { "ran": false, "notes": null }
+      },
       "platforms": {
         "facebook_marketplace": "posted | skipped | failed | pending"
       },
@@ -186,6 +202,11 @@ Schema:
   ]
 }
 ```
+
+The `comps` block is populated in **Phase 2** before Phase 4 ever runs. Every
+sub-source key is present even when its layer was skipped — `skipped_reason`
+records why. Full layer-source semantics and run-budget rules live in
+`live-comp-search.md`.
 
 Write the file after Phase 3 (with all items at `pending`), then update each
 item's platform status as you go. This means an interrupted run can be resumed

@@ -10,6 +10,24 @@ Log in must be active in the attached Chrome before navigating here. If you
 land on a login wall, stop and surface the issue to the user (see
 `browser-automation.md` stop-the-line conditions).
 
+## Marketplace search (read-only — comp lookup)
+
+For **Phase 2 comp searches** the agent uses Marketplace search, not the
+create-listing form. The URL is client-rendered, so query terms must be
+typed into the searchbox rather than passed as URL params:
+
+```
+https://www.facebook.com/marketplace/melbourne/search
+```
+
+Full navigation sequence (snapshot → click searchbox → ctrl+a → fill → Enter
+→ snapshot grid → extract cards), run-budget rules (8–15 s pause between
+searches, cap 20/run), and skipped-layer recording live in
+`live-comp-search.md` (Layer 2).
+
+Same stop-the-line conditions apply (captcha, login wall, "browsing too
+fast") — see the table at the bottom of this file.
+
 ## Field fill order
 
 FB Marketplace validates fields progressively — fill in this order to avoid
