@@ -83,21 +83,52 @@ preview screen before final submission.
 
 ### Step 6 — Confirm the listing is live
 
-After clicking Publish:
+After clicking Publish, **do not use `wait_for` to detect navigation** — that
+MCP tool matches page text content, not URL changes, and will never resolve
+on the post-publish redirect. Instead, poll the URL via `evaluate_script`.
 
-1. Wait for the page to navigate away from the form (use `wait_for` on a
-   known post-publish element — see platform files for the selector).
-2. Snapshot and screenshot the result page.
-3. Confirm success:
-   - **Facebook Marketplace**: navigates to the listing detail page (URL
-     contains `/marketplace/item/`). Screenshot confirms listing is live.
-4. If the page shows an error, a captcha, or does not navigate away within
-   ~10 s: **stop immediately**. Screenshot + surface to user. Do not
-   retry-click.
-5. Record `{ item, platform, status: "posted", timestamp, url }` in the
-   run-state JSON. Tell the user:
-   *"Posted `<item>` on [Platform]."* (include listing URL if visible in the
-   post-publish page).
+**Detection protocol** — Facebook Marketplace:
+
+1. Poll `window.location.href` every **500 ms** for up to **15 s** using
+   `evaluate_script` with body `return window.location.href;`.
+
+2. **Success path A — listing URL matched.** URL matches
+   `^https://www\.facebook\.com/marketplace/item/\d+/?(\?.*)?$`:
+   - Capture the full URL.
+   - Record `{ status: "posted", post_publish_detection: "url_match",
+     listing_url: "<captured>", timestamp }` in the run-state JSON.
+   - Write the URL to `listing.md` under the `**URL:**` field.
+   - Break the poll. Tell the user: *"Posted `<item>` — `<URL>`."*
+
+3. **Success path B — redirect to your-listings.** URL matches
+   `/marketplace/you/selling` or `/marketplace/your_listings` (FB A/B tests
+   this destination):
+   - Record `{ status: "posted", post_publish_detection:
+     "your_listings_redirect", listing_url: null }` in the run-state.
+   - Take a screenshot.
+   - Tell the user: *"Posted `<item>` — FB redirected to your-listings page;
+     the listing URL was not captured. Paste it here if you want it stored
+     in `listing.md`."*
+   - Break the poll.
+
+4. **Timeout — 15 s elapsed without a match.**
+   - `take_screenshot`.
+   - Record `{ status: "posted", post_publish_detection: "timeout_manual",
+     listing_url: null }` in the run-state (provisional — user will confirm).
+   - Surface to user: *"Publish click sent, but I couldn't confirm the
+     listing went live within 15 s. Screenshot attached. Was it published?
+     If yes, paste the listing URL."*
+   - Wait for the user's reply before continuing to Step 7. Do not retry-click
+     Publish.
+
+5. If at any point during the poll the page shows an error banner, a captcha,
+   or a "posting too fast" warning: **stop immediately**. Screenshot + surface
+   to user per the stop-the-line conditions below.
+
+**Why polling, not `wait_for`:** `wait_for` waits for text to appear on the
+page. The post-publish state is a URL change, not a text change — there is no
+reliable text token to wait for. A 500 ms `evaluate_script` poll is the
+correct shape, and 30 calls over 15 s is trivial load on CDP.
 
 ### Step 7 — Human-cadence delay
 
@@ -148,7 +179,9 @@ Schema:
       "photos": ["photo1.jpg", "photo2.jpg"],
       "platforms": {
         "facebook_marketplace": "posted | skipped | failed | pending"
-      }
+      },
+      "post_publish_detection": "url_match | your_listings_redirect | timeout_manual | null",
+      "listing_url": "https://www.facebook.com/marketplace/item/<id>/ | null"
     }
   ]
 }

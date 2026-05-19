@@ -155,9 +155,15 @@ attempt during a real run; baked in here to avoid repeating them.
   path is unknown, copy a test file and confirm the upload succeeds before
   staging all photos.
 
-- **Post-publish success signal.** After clicking Publish, FB navigates to the
-  listing detail page — URL will contain `/marketplace/item/<id>`. Use
-  `wait_for` on that URL pattern to confirm success before recording "posted".
+- **Post-publish success signal — poll, don't `wait_for`.** After clicking
+  Publish, FB navigates either to the listing detail page (URL contains
+  `/marketplace/item/<id>`) or, on some A/B variants, to a your-listings page
+  (`/marketplace/you/selling` or `/marketplace/your_listings`).
+  Do NOT use `wait_for` for this — it matches text content, not URL changes,
+  and will never resolve. Poll `window.location.href` via `evaluate_script`
+  every 500 ms for up to 15 s and match against the URL patterns above.
+  Full protocol (success paths, redirect fallback, timeout handling) lives in
+  `browser-automation.md` Step 6.
 
 ## DOM stability notes
 
