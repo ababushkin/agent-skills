@@ -2,16 +2,16 @@
 name: resell-au
 description: >-
   Price secondhand items and write ready-to-post listings for selling in
-  Australia (Facebook Marketplace, Gumtree, or a garage sale), and optionally
-  drive a real browser to fill the listing forms so the user only has to click
-  Post. Use this skill WHENEVER the user wants to sell, flip, declutter,
-  offload, or get rid of an item and asks what it's worth, how much to charge,
-  how to price it, or wants a listing / title / description written — even if
-  they just paste "selling X, condition Y" with no explicit question. Also
-  trigger for "is this even worth selling", garage sale prep, batch-pricing a
-  pile of stuff, "write me a Marketplace ad", or when the user points at a
-  folder of photos and asks to list items automatically. Defaults to AUD and
-  the Melbourne/Australian secondhand market. Always searches live comparable
+  Australia (Facebook Marketplace or a garage sale), and optionally drive a
+  real browser to fill the listing forms so the user only has to click Post.
+  Use this skill WHENEVER the user wants to sell, flip, declutter, offload, or
+  get rid of an item and asks what it's worth, how much to charge, how to
+  price it, or wants a listing / title / description written — even if they
+  just paste "selling X, condition Y" with no explicit question. Also trigger
+  for "is this even worth selling", garage sale prep, batch-pricing a pile of
+  stuff, "write me a Marketplace ad", or when the user points at a folder of
+  photos and asks to list items automatically. Defaults to AUD and the
+  Melbourne/Australian secondhand market. Always searches live comparable
   listings before pricing.
 ---
 
@@ -25,12 +25,12 @@ The skill has **two modes** that share the same pricing and ad-copy logic:
   automation.
 - **Folder mode** — user passes a folder path (e.g. `/resell-au ~/sell-pile`).
   You walk each subfolder, draft listings from photos, price each item, then
-  drive a real Chrome session to fill FB Marketplace and Gumtree AU forms and
-  automatically click Publish on the review screen.
+  drive a real Chrome session to fill FB Marketplace forms and automatically
+  click Publish on the review screen.
 
 The user is in **Melbourne, Australia** — prices are **AUD**, market is
-**Facebook Marketplace / Gumtree / local garage sale**, buyers **haggle**, and
-pickup is **local cash/PayID** by default.
+**Facebook Marketplace / local garage sale**, buyers **haggle**, and pickup is
+**local cash/PayID** by default.
 
 Standing preferences (already decided — don't re-ask):
 
@@ -54,7 +54,7 @@ For each item typed or pasted:
 2. **Search live comparables.** Required every time. Run 1–3 searches for what
    the same/similar item is *currently listed for, secondhand, in Australia*.
    Good patterns:
-   - `<brand model> gumtree` and `<brand model> facebook marketplace australia`
+   - `<brand model> facebook marketplace australia`
    - `<brand model> ebay australia` (sold/used, not new RRP)
    - For generics: `used <item type> price australia`
    Anchor to **secondhand AU asking prices**, not US prices or new RRP. If
@@ -81,32 +81,28 @@ Invoked when the user passes a path argument: `/resell-au ~/path/to/folder`
 
 1. Verify Chrome is reachable on port 9222 via a `list_pages` MCP call. If
    not, surface `references/chrome-setup.md` and stop — do not proceed.
-2. Navigate to FB Marketplace and Gumtree AU in the attached Chrome and check
-   for the login chrome. If not logged in, ask the user to log in once in the
-   attached Chrome, then re-verify.
+2. Navigate to FB Marketplace in the attached Chrome and check for the login
+   chrome. If not logged in, ask the user to log in once in the attached
+   Chrome, then re-verify.
 3. **Discover and classify subfolders.**
 
    **3a. List subfolders.** Skip anything starting with `.` or `_`.
    If zero valid subfolders, report politely and stop.
 
-   **3b. Classify each subfolder** by reading its `listing.md` (if present).
-   Parse every line matching `**Platform:** <name>` in the file:
+   **3b. Classify each subfolder** by reading its `listing.md` (if present):
 
-   - No `listing.md` → `new` — queue for FB Marketplace + Gumtree AU
-   - `listing.md` has `**Platform:** Facebook Marketplace` only → `fb-listed` — queue for Gumtree AU only
-   - `listing.md` has `**Platform:** Gumtree AU` only → `gt-listed` — queue for FB Marketplace only
-   - `listing.md` has both platforms → `fully-listed` — excluded from all queues
+   - No `listing.md` → `new` — queue for FB Marketplace
+   - `listing.md` has `**Platform:** Facebook Marketplace` → `fully-listed` — excluded from queue
 
    **3c. Report the classification table before proceeding:**
 
    | Item | Status | Action |
    |------|--------|--------|
-   | kettlebell | new | list on FB + Gumtree |
-   | dyson-v8 | fb-listed | list on Gumtree only |
-   | ikea-shelf | fully-listed | skip — already on both platforms |
+   | kettlebell | new | list on FB Marketplace |
+   | ikea-shelf | fully-listed | skip — already listed |
 
    If every item is `fully-listed`, tell the user all items are already listed and stop.
-   Otherwise proceed with only the items that have at least one platform pending.
+   Otherwise proceed with only the `new` items.
 
 ### Phase 1 — Per-item draft (loop over subfolders)
 
@@ -143,7 +139,7 @@ For each subfolder, one item at a time:
 
 ### Phase 4 — Auto-list (per item, per platform)
 
-For each surviving item, then for each of [Facebook Marketplace, Gumtree AU]:
+For each surviving item, list on Facebook Marketplace:
 
 **Pre-loop gate:** Before navigating, read `<item_subfolder>/listing.md` (if
 present). If the file contains a `**Platform:** <current platform>` line,
@@ -158,7 +154,7 @@ cases such as manual `listing.md` edits or an interrupted prior run.
    raw CSS selectors — they break every quarter. Re-snapshot after every state
    change.
 3. Fill fields in the order the form expects. See `references/facebook-marketplace.md`
-   and `references/gumtree-au.md` for exact field maps and category trees.
+   for exact field maps and category trees.
 4. Upload photos in **lexical filename order** — first file becomes the lead
    photo. Use the MCP `upload_file` per element UID, one at a time.
    Snapshot after each upload to confirm thumbnail appeared. Cap at 10.
@@ -168,9 +164,9 @@ cases such as manual `listing.md` edits or an interrupted prior run.
    fix it first, re-snapshot to confirm, then click Publish.
 6. **Confirm success.** After clicking Publish, wait for the page to navigate
    away from the form. Snapshot and screenshot the result. Confirm the listing
-   is live (FB navigates to the listing detail page; Gumtree shows a
-   confirmation screen). If the page shows an error or unexpected state, stop
-   and surface it to the user — do not retry-click.
+   is live (FB navigates to the listing detail page). If the page shows an
+   error or unexpected state, stop and surface it to the user — do not
+   retry-click.
    Tell the user: *"Posted `<item>` on [Platform] — [listing URL if visible]."*
 7. **Write listing record.** Immediately after confirming the listing is live,
    write `<item_subfolder>/listing.md`. If the file already exists (item was
@@ -218,9 +214,6 @@ Rules for this file:
 - **Always include `Garage sale: $X`** in seller notes, even for user-set
   prices. If no garage sale price was calculated, derive it: 45% of list
   price, rounded to nearest whole dollar under $30, nearest $5 above $30.
-- If the item is re-listed on a second platform, append a second
-  `**Platform:**` line and a second `**Date:**` line — don't overwrite the
-  first.
 
 ### Phase 5 — Summary
 
@@ -276,7 +269,7 @@ payment.>
 
 —— seller notes (not for the ad) ——
 • Target: ~$<honest target>  |  Floor: $<walk-away>  |  Garage sale: $<gs price>
-• Why: <comp range seen, e.g. "Similar ones listed $90–$140 on Gumtree/FB; yours is good condition with the box">
+• Why: <comp range seen, e.g. "Similar ones listed $90–$140 on FB Marketplace; yours is good condition with the box">
 • Tips: <0–2 quick selling tips if relevant — bundle suggestion, best photo, expected lowball, listing category, season timing>
 ```
 
@@ -338,8 +331,8 @@ These apply in Folder Mode. They are hard rules — not suggestions.
 4. **Pause on captcha / 2FA / rate-limit prompts.** Surface the issue, hand
    control to the user, do not retry-loop or attempt to solve captchas.
 5. **One platform at a time per item.** Do not parallelise across platforms.
-6. **AU-only.** Australian Marketplace + Gumtree AU only. Do not attempt other
-   regions or Gumtree UK.
+6. **AU-only.** Australian Facebook Marketplace only. Do not attempt other
+   regions.
 7. **DOM-brittle by design.** If `take_snapshot` returns a structure that does
    not match the field map in references, **stop immediately**, show the user
    the snapshot, and ask them to confirm the new layout. Do not blindly click
@@ -363,10 +356,7 @@ These apply in Folder Mode. They are hard rules — not suggestions.
   Human-cadence rules and stop-the-line conditions. Read before Phase 4.
 - `references/facebook-marketplace.md` — FB-specific field map, photo rules,
   category mapping cheat sheet, captcha/2FA/login-wall handling, ban-avoidance
-  hygiene. Read in Phase 4 when listing to Facebook.
-- `references/gumtree-au.md` — Gumtree AU field map, mandatory category/
-  subcategory tree, hCaptcha behaviour. Read in Phase 4 when listing to
-  Gumtree.
+  hygiene. Read in Phase 4.
 
 ---
 
@@ -375,7 +365,7 @@ These apply in Folder Mode. They are hard rules — not suggestions.
 User: *"Selling my old Weber Q1200 BBQ, works fine, a bit of rust on the
 stand, no gas bottle."*
 
-After searching Gumtree/FB AU for used Weber Q1200:
+After searching FB Marketplace AU for used Weber Q1200:
 
 ```
 🏷️ Weber Q1200 Portable BBQ — $140
@@ -392,7 +382,7 @@ Pickup [your suburb], cash or PayID on collection.
 
 —— seller notes (not for the ad) ——
 • Target: ~$130  |  Floor: $110  |  Garage sale: $70
-• Why: Used Q1200s listed $120–$180 on Gumtree/FB AU; yours discounted for
+• Why: Used Q1200s listed $120–$180 on FB Marketplace AU; yours discounted for
   the rust + no bottle, still within range and the cheapest clean option.
 • Tips: Lead photo with lid up showing clean burner. Expect a "$100 today?"
   message — $110 is your yes. Sells fastest Sept–Dec (BBQ season).

@@ -1,7 +1,7 @@
 # Chrome Setup for Resell AU
 
-One-time setup: launch a dedicated Chrome instance and log in to both
-platforms. Do this once; cookies and 2FA trust persist across runs.
+One-time setup: launch a dedicated Chrome instance and log in to Facebook
+Marketplace. Do this once; cookies and 2FA trust persist across runs.
 
 ## Why a dedicated Chrome, not your daily browser
 
@@ -34,18 +34,16 @@ will open normally.
   --no-first-run
 ```
 
-## Step 2 — Log in to both platforms once
+## Step 2 — Log in to Facebook Marketplace once
 
 In the newly opened Chrome window (not your regular browser):
 
 1. Go to https://www.facebook.com/marketplace and log in with your Facebook
    account. Complete any 2FA prompts. You should land on the Marketplace feed.
-2. Go to https://www.gumtree.com.au and log in (or create an account if you
-   don't have one). Complete any email-verification steps.
 
-That's it. Both sessions are now stored in `~/.resell-au-chrome`. You won't
+That's it. The session is now stored in `~/.resell-au-chrome`. You won't
 need to log in again unless you clear that directory or the session expires
-(Facebook sessions can last months; Gumtree similarly).
+(Facebook sessions can last months).
 
 ## Step 3 — Verify the agent can attach
 
@@ -65,9 +63,10 @@ lsof -ti :9222 | xargs kill -9
 ```
 Then relaunch with the command above.
 
-**"Logged out on FB / Gumtree"**
-Open the dedicated Chrome manually (it's already launched), navigate to the
-site, and log in again. Sessions occasionally expire; this is normal.
+**"Logged out on FB"**
+Open the dedicated Chrome manually (it's already launched), navigate to
+Facebook Marketplace, and log in again. Sessions occasionally expire; this is
+normal.
 
 **"Chrome profile reset / can't find ~/.resell-au-chrome"**
 The user-data-dir was deleted or the path changed. Relaunch Chrome with the

@@ -118,8 +118,6 @@ State the tracker path so the user can open it:
   the first space following the number.
 - **Title extraction**: `**Title:** Weber Q1200 Portable Gas BBQ — works great`
   → use the full title string as the item name in the tracker.
-- **Multiple platforms**: a listing.md can have two Platform lines (FB +
-  Gumtree). Only add the item once — deduplicate by title before the loop.
 - **No browser already open**: if Chrome DevTools is not reachable and
   Playwright is unavailable, surface the error and stop. Do not attempt to
   write to localStorage directly — always go through the browser so the page's

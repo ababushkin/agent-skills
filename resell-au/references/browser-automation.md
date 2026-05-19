@@ -2,22 +2,21 @@
 
 The agent runs this loop in Folder Mode Phase 4 for each item × platform pair.
 It is the generic orchestration layer; platform-specific field maps live in
-`facebook-marketplace.md` and `gumtree-au.md`.
+`facebook-marketplace.md`.
 
 ## Pre-conditions (verified in Phase 0 before this loop ever runs)
 
 - Chrome is reachable on port 9222.
-- User is logged in to both platforms in the attached Chrome.
+- User is logged in to Facebook Marketplace in the attached Chrome.
 - All items have been drafted, priced, and ad copy approved (Phases 1–3).
 
 ## The loop (one item, one platform)
 
 ### Step 1 — Navigate
 
-Navigate to the platform's create-listing URL:
+Navigate to the create-listing URL:
 
 - Facebook Marketplace: `https://www.facebook.com/marketplace/create/item`
-- Gumtree AU: `https://www.gumtree.com.au/p-post-ad.html`
 
 Wait for the page to fully load before snapshotting (use `wait_for` on a
 known stable element — see the platform-specific file for the selector).
@@ -51,8 +50,6 @@ Fill order:
 - **Facebook Marketplace**: photos → category → title → price → condition →
   description → location → hide-from-friends toggle. See
   `facebook-marketplace.md` for the exact interaction sequence.
-- **Gumtree AU**: category tree → title → photos → price → condition →
-  description → location → contact preferences. See `gumtree-au.md`.
 
 ### Step 4 — Upload photos
 
@@ -65,8 +62,7 @@ Upload protocol:
 2. Snapshot. Confirm the thumbnail appeared. If it didn't, wait 2 s and
    snapshot again. If it still hasn't appeared after two checks, stop and
    tell the user.
-3. Repeat for each photo. Cap at 10 (FB Marketplace and free Gumtree both
-   enforce this limit; do not attempt an 11th upload).
+3. Repeat for each photo. Cap at 10 — do not attempt an 11th upload.
 
 Do not upload all photos in one call even if the MCP supports it — confirm
 each thumbnail before the next upload.
@@ -95,7 +91,6 @@ After clicking Publish:
 3. Confirm success:
    - **Facebook Marketplace**: navigates to the listing detail page (URL
      contains `/marketplace/item/`). Screenshot confirms listing is live.
-   - **Gumtree AU**: shows a "Your ad is live" confirmation screen.
 4. If the page shows an error, a captcha, or does not navigate away within
    ~10 s: **stop immediately**. Screenshot + surface to user. Do not
    retry-click.
@@ -107,15 +102,11 @@ After clicking Publish:
 ### Step 7 — Human-cadence delay
 
 After each successfully handled listing (whether posted or skipped), pause
-**30–90 seconds (random)** before starting the next item × platform pair.
+**30–90 seconds (random)** before starting the next item.
 
 Tell the user: *"Waiting [N] s before the next listing…"*
 
-Between switching platforms for the same item, pause **60–120 seconds
-(random)**.
-
-Never skip these delays. Burst posting is the primary detection trigger on
-both platforms.
+Never skip these delays. Burst posting is the primary detection trigger.
 
 ---
 
@@ -156,8 +147,7 @@ Schema:
       "ad_copy": "Full description text",
       "photos": ["photo1.jpg", "photo2.jpg"],
       "platforms": {
-        "facebook_marketplace": "posted | skipped | failed | pending",
-        "gumtree_au": "posted | skipped | failed | pending"
+        "facebook_marketplace": "posted | skipped | failed | pending"
       }
     }
   ]
@@ -178,4 +168,3 @@ by reading the file and skipping already-posted items.
 | "I'll try to solve the captcha automatically." | Automated captcha solving is exactly the behaviour that triggers bans. Stop the line, hand to user. |
 | "I'll skip the delay — we're in a hurry." | The delay is ban-avoidance, not convenience. Skipping it is the primary detection trigger. |
 | "The review screen fields look roughly right — I'll just publish." | Verify each field explicitly against the approved copy before clicking Publish. "Roughly right" is how wrong content gets posted. |
-| "I'll parallelise FB and Gumtree to save time." | Safety rule #5 is absolute. One platform at a time per item. |
