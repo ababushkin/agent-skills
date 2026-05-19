@@ -71,38 +71,38 @@ Upload protocol:
 Do not upload all photos in one call even if the MCP supports it — confirm
 each thumbnail before the next upload.
 
-### Step 5 — Stop on review screen
+### Step 5 — Review screen — verify then publish
 
-After all fields are filled and photos uploaded, the form should present a
-review / preview screen (both platforms show one before final submission).
+After all fields are filled and photos uploaded, the form presents a review /
+preview screen before final submission.
 
 1. Snapshot the review screen.
 2. Take a `take_screenshot`.
-3. Tell the user:
-   > **"[Platform] draft ready for `<item name>`.**
-   > Review the page in your browser and click **Post** (or **Publish**) when
-   > happy.
-   > Reply:
-   > - `posted` — to record success and move on
-   > - `skip` — to leave this draft and move on without posting
-   > - `edit <field name>` — to fix a specific field before posting"
-4. Wait. Do not click anything.
+3. **Verify** title, price, condition, and description all match the approved
+   ad copy. Check each field explicitly against the Phase 3 approved block.
+4. If any field looks wrong: fix it (navigate back or use inline edit on the
+   review screen), re-snapshot to confirm, then return to step 1.
+5. If everything is correct: locate the Publish / Post button in the snapshot
+   and click it.
 
-### Step 6 — Handle user response
+### Step 6 — Confirm the listing is live
 
-**`posted`**: Record `{ item, platform, status: "posted", timestamp }` in the
-run-state JSON. Proceed to the next platform (or next item).
+After clicking Publish:
 
-**`skip`**: Record `{ item, platform, status: "skipped" }`. Proceed.
-
-**`edit <field>`**: Navigate back to that field (or use the inline edit option
-on the review screen if available), make the change, re-snapshot to confirm,
-then stop on the review screen again (repeat Step 5).
-
-**No response / long silence**: Do not auto-proceed. If the user seems to have
-stepped away, remind them once after a few minutes:
-*"Still waiting for your response on the [Platform] draft for `<item>` — reply
-`posted`, `skip`, or `edit <field>`."*
+1. Wait for the page to navigate away from the form (use `wait_for` on a
+   known post-publish element — see platform files for the selector).
+2. Snapshot and screenshot the result page.
+3. Confirm success:
+   - **Facebook Marketplace**: navigates to the listing detail page (URL
+     contains `/marketplace/item/`). Screenshot confirms listing is live.
+   - **Gumtree AU**: shows a "Your ad is live" confirmation screen.
+4. If the page shows an error, a captcha, or does not navigate away within
+   ~10 s: **stop immediately**. Screenshot + surface to user. Do not
+   retry-click.
+5. Record `{ item, platform, status: "posted", timestamp, url }` in the
+   run-state JSON. Tell the user:
+   *"Posted `<item>` on [Platform]."* (include listing URL if visible in the
+   post-publish page).
 
 ### Step 7 — Human-cadence delay
 
@@ -177,5 +177,5 @@ by reading the file and skipping already-posted items.
 | "The element UID looks similar to what I'd expect — I'll just click it." | DOM layouts change. A wrong click can trigger actions that are hard to undo (e.g. posting to the wrong category, submitting a draft prematurely). Always re-snapshot and verify. |
 | "I'll try to solve the captcha automatically." | Automated captcha solving is exactly the behaviour that triggers bans. Stop the line, hand to user. |
 | "I'll skip the delay — we're in a hurry." | The delay is ban-avoidance, not convenience. Skipping it is the primary detection trigger. |
-| "I'll click Post for this one — the user said they're sure." | Safety rule #1 is absolute. The agent never clicks the submit button regardless of user instruction. |
+| "The review screen fields look roughly right — I'll just publish." | Verify each field explicitly against the approved copy before clicking Publish. "Roughly right" is how wrong content gets posted. |
 | "I'll parallelise FB and Gumtree to save time." | Safety rule #5 is absolute. One platform at a time per item. |

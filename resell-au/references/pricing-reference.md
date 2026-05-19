@@ -52,6 +52,12 @@ anchor to those instead — they already price in depreciation and demand.
 - **Channels:** Facebook Marketplace = highest volume + most lowballers/no-shows.
   Gumtree = fewer but more serious buyers. Garage sale = instant cash, no
   messaging, deep discounts expected.
+- **FB Marketplace pricing anchor:** Price at or just below the **lowest**
+  listed comparable in equal-or-better condition, not the median. Buyers on FB
+  scroll through multiple listings and message the cheapest one first. The
+  "10–15% above target" inflation in the balanced strategy is for thin-supply
+  markets (eBay, specialist groups); on FB Marketplace it works against you.
+  Being the cheapest clearly-good listing is the strategy.
 - **Haggling is the default.** Listing "ono" or "open to offers" gets more
   contacts; "firm" filters but reduces them. First message is almost always a
   lowball — the floor figure is the user's pre-decided "yes".

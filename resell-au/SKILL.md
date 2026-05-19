@@ -25,8 +25,8 @@ The skill has **two modes** that share the same pricing and ad-copy logic:
   automation.
 - **Folder mode** — user passes a folder path (e.g. `/resell-au ~/sell-pile`).
   You walk each subfolder, draft listings from photos, price each item, then
-  drive a real Chrome session to fill FB Marketplace and Gumtree AU forms —
-  stopping on the review screen for the user to click Post themselves.
+  drive a real Chrome session to fill FB Marketplace and Gumtree AU forms and
+  automatically click Publish on the review screen.
 
 The user is in **Melbourne, Australia** — prices are **AUD**, market is
 **Facebook Marketplace / Gumtree / local garage sale**, buyers **haggle**, and
@@ -128,17 +128,65 @@ For each surviving item, then for each of [Facebook Marketplace, Gumtree AU]:
 4. Upload photos in **lexical filename order** — first file becomes the lead
    photo. Use the MCP `upload_file` per element UID, one at a time.
    Snapshot after each upload to confirm thumbnail appeared. Cap at 10.
-5. **Stop on review screen.** Take a screenshot. Tell the user:
-   *"[Platform] draft ready for `<item>`. Review the page and click Post when
-   happy. Reply 'posted' / 'skip' / 'edit `<field>`'."* Wait.
-6. On `posted`: record success in the run-state file and move on.
-   On `skip`: leave the draft on screen, record skipped.
-   On `edit X`: fix field X and stop on review again.
-7. **Human-cadence delay** between items: 30–90 s random pause. Make it
+5. **Review screen — verify then publish.** Take a screenshot. Verify title,
+   price, condition, and description match the approved copy. If everything
+   looks correct, click the Publish / Post button. If any field looks wrong,
+   fix it first, re-snapshot to confirm, then click Publish.
+6. **Confirm success.** After clicking Publish, wait for the page to navigate
+   away from the form. Snapshot and screenshot the result. Confirm the listing
+   is live (FB navigates to the listing detail page; Gumtree shows a
+   confirmation screen). If the page shows an error or unexpected state, stop
+   and surface it to the user — do not retry-click.
+   Tell the user: *"Posted `<item>` on [Platform] — [listing URL if visible]."*
+7. **Write listing record.** Immediately after confirming the listing is live,
+   write `<item_subfolder>/listing.md`. If the file already exists (item was
+   previously listed on another platform), update the Platform line and append
+   the new platform entry — don't overwrite the existing record.
+   See the listing.md format section below for the exact template.
+8. **Human-cadence delay** between items: 30–90 s random pause. Make it
    visible: *"Waiting 45 s before next listing…"*
 
 See `references/browser-automation.md` for the complete per-platform loop,
 human-cadence rules, and stop-the-line conditions.
+
+### listing.md format
+
+Write this exact template to `<item_subfolder>/listing.md` in Phase 4 Step 7:
+
+```markdown
+# <Item title> — listing record
+
+**Status:** Published
+**Date:** YYYY-MM-DD
+**Platform:** Facebook Marketplace
+
+## Ad copy
+
+**Title:** <title>
+**Price:** $<price> (firm / ono)
+**Category:** <category>
+**Condition:** <condition>
+**Brand:** <brand, or "(unbranded)" if unknown>
+**Location:** <suburb>, Victoria, Australia
+**Meetup:** Door pickup
+
+**Description:**
+<description text>
+
+## Seller notes
+
+- Target: ~$<target> | Floor: $<floor> | Garage sale: $<garage_sale>
+- Comps: <comp range and source>
+- Tips: <0-2 tips>
+```
+
+Rules for this file:
+- **Always include `Garage sale: $X`** in seller notes, even for user-set
+  prices. If no garage sale price was calculated, derive it: 45% of list
+  price, rounded to nearest whole dollar under $30, nearest $5 above $30.
+- If the item is re-listed on a second platform, append a second
+  `**Platform:**` line and a second `**Date:**` line — don't overwrite the
+  first.
 
 ### Phase 5 — Summary
 
@@ -146,8 +194,8 @@ human-cadence rules, and stop-the-line conditions.
   (with reason).
 - Write a run-state file at
   `<target_folder>/.resell-au-run-<YYYYMMDD-HHMM>.json` containing per-item
-  status, prices, and ad copy. Lets a subsequent run resume after a
-  captcha-pause, browser crash, or user interruption.
+  status, prices, ad copy, and `listing_md_path`. Lets a subsequent run
+  resume after a captcha-pause, browser crash, or user interruption.
 
 ---
 
@@ -206,10 +254,14 @@ Notes on the block:
 - **firm vs ono**: balanced default is **"ono"** (or "open to reasonable
   offers"). Use **"firm"** only when already priced at/below the cheapest comp,
   or the user said so.
-- **Description voice**: plain, honest, slightly warm. State flaws up front.
-  Include dimensions for furniture, capacity/size for appliances, model/year
-  for electronics. Default pickup line:
+- **Description voice**: sales-forward, positive. Lead with what's great about
+  the item. Do not mention defects or flaws in the description — they are
+  visible in the photos and buyers can decide for themselves. Include
+  dimensions for furniture, capacity/size for appliances, model/year for
+  electronics. Default pickup line:
   `Pickup <suburb/area>, cash or PayID on collection.`
+- **No em-dashes.** Use hyphens (-) everywhere. Never use — in titles or
+  descriptions.
 - Keep the whole block tight. No preamble — just the block(s), then any
   cross-item notes after.
 
@@ -242,8 +294,9 @@ bundle, donate, scrap, or "fix the cord then it's worth ~$X".
 
 These apply in Folder Mode. They are hard rules — not suggestions.
 
-1. **Human-in-the-loop submit only.** The agent never clicks the final
-   Post/Publish/Submit button. If asked to click it, refuse.
+1. **Verify before publishing.** On the review screen, confirm title, price,
+   condition, and description match the approved copy before clicking Publish.
+   If anything looks wrong, fix it first. Never publish with unverified content.
 2. **One account per platform per device.** Do not attempt multi-account
    features — Meta near-certain ban.
 3. **Human-cadence delays** between listings (30–90 s randomised) and between

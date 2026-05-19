@@ -63,7 +63,8 @@ after selecting a top-level category to confirm the subcategory options.
 | Bikes (push bikes) | Sporting Goods | Bikes |
 | Exercise equipment | Sporting Goods | Exercise & Fitness |
 | Kids / baby gear | Baby & Kids | Baby & Toddler Gear |
-| Clothing, shoes | Clothing & Accessories | (match gender/type) |
+| Kids' footwear / sports boots | Sporting Goods | Sports & Outdoors |
+| Clothing, shoes (adult) | Clothing & Accessories | (match gender/type) |
 | Books, music, games | Entertainment | Books, Movies & Music |
 | Cars, utes, vans | Vehicles | Cars & Trucks |
 | BBQs, outdoor cooking | Home & Garden | Outdoor |
@@ -116,6 +117,44 @@ These reduce (not eliminate) the risk of account action:
 - **Hide from friends** — this is a per-listing toggle. Some users prefer it
   on to avoid acquaintances seeing everything they sell; leave at the user's
   existing default.
+
+## Known fill quirks (discovered in testing — read before Phase 4)
+
+These are not in the accessibility tree docs. Each was found through a failed
+attempt during a real run; baked in here to avoid repeating them.
+
+- **Title and price fields append, not replace.** `fill()` appends to the
+  existing placeholder or previous value. Always JS-clear first:
+  ```js
+  const el = document.querySelector('input[placeholder="Title"]');
+  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  nativeInputValueSetter.call(el, '');
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  ```
+  Then call `fill()` as normal.
+
+- **Description textarea requires click then type_text.** `fill()` alone does
+  not persist in the Sports & Outdoors (and some other) category forms.
+  Correct sequence: `click(uid)` → `type_text(text)`. Verify the value was
+  accepted: `document.querySelectorAll('textarea')[0].value`.
+
+- **Location autocomplete: use keyboard, not snapshot click.** The autocomplete
+  suggestions often do not appear in the a11y tree even though they exist in
+  the DOM. Reliable sequence: JS-clear the location field → `fill("suburb")` →
+  `press_key("ArrowDown")` → `press_key("Enter")`. This reliably selects the
+  first suggestion.
+
+- **Photos must be in an MCP-accessible path.** The `upload_file` MCP tool
+  only allows files within the workspace root. If photos are on the Desktop or
+  any path outside the workspace, copy them to `/tmp/` first:
+  ```bash
+  cp /path/to/photo.jpg /tmp/photo.jpg
+  ```
+  Then pass the `/tmp/` path to `upload_file`.
+
+- **Post-publish success signal.** After clicking Publish, FB navigates to the
+  listing detail page — URL will contain `/marketplace/item/<id>`. Use
+  `wait_for` on that URL pattern to confirm success before recording "posted".
 
 ## DOM stability notes
 
