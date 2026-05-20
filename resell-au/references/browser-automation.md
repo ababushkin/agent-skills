@@ -144,6 +144,19 @@ Tell the user: *"Waiting [N] s before the next listing…"*
 
 Never skip these delays. Burst posting is the primary detection trigger.
 
+**How to actually pause** — the Claude Code Bash tool blocks long leading
+`sleep` commands (the harness rejects `sleep 60` and similar). Use one of:
+
+1. **`run_in_background: true`** on a `sleep N` Bash call — the harness
+   accepts it, the task ID is returned immediately, and you get a completion
+   notification when it finishes. This is the cleanest pattern.
+2. **Bash `Monitor` with an until-loop** for conditional waits — e.g.
+   `until <check>; do sleep 2; done`. Only when polling external state.
+
+Do not chain shorter `sleep` calls to work around the block — the harness
+detects that pattern. Do not poll with multiple Bash calls in a loop —
+`run_in_background` already gives you a single notification.
+
 ---
 
 ## Stop-the-line conditions

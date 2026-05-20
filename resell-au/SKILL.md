@@ -100,6 +100,19 @@ Invoked when the user passes a path argument: `/resell-au ~/path/to/folder`
    **3a. List subfolders.** Skip anything starting with `.` or `_`.
    If zero valid subfolders, report politely and stop.
 
+   **Subfolder names on disk are canonical.** Never reconstruct a subfolder
+   name from an item title — title-derived slugs go wrong (e.g.
+   `phillips-noodle-maker-hr2358-06` is the real folder; `philips-…` is what
+   the title suggests). When you need to look up a subfolder by approximate
+   name (matching against a tracker entry, a prior listing.md reference, a
+   user-typed name), run a Bash one-liner like:
+
+   ```bash
+   python3 -c "import difflib, os; print(difflib.get_close_matches('<query>', os.listdir('<parent>'), n=1, cutoff=0.6))"
+   ```
+
+   If `get_close_matches` returns `[]`, stop and ask the user — do not guess.
+
    **3b. Classify each subfolder** by reading its `listing.md` (if present):
 
    - No `listing.md` → `new` — queue for FB Marketplace

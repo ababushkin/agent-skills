@@ -44,6 +44,21 @@ For each subfolder, check if `listing.md` exists. Collect all that do.
 
 If zero listing.md files are found: tell the user and stop.
 
+**Load sold items from tracker.json.** If `<target_folder>/tracker.json` exists,
+read and parse it. Build a sold-names set: the lowercased `name` value of every
+entry where `sold` is a non-empty string. Example:
+
+```json
+[
+  { "id": "a1b2c3d4", "name": "12kg Kettlebell - Good Condition!", "listed": "15", "sold": "15" },
+  { "id": "b2c3d4e5", "name": "Knife Sharpening Stone Pack - brand new", "listed": "15", "sold": "" }
+]
+```
+
+The first entry is sold (`sold` = "15"); the second is not (`sold` = ""). If
+`tracker.json` is absent, continue with an empty sold-names set (no items
+filtered) and note this in the final report.
+
 ### Step 2 — Parse each listing.md
 
 For each `listing.md`, extract:
@@ -63,6 +78,9 @@ No special marking on the label for estimated prices.
 
 **If the item has `Status: Skipped` or `Status: Not listed`**: include it in
 the label sheet anyway — it still needs a garage sale price.
+
+**If the item name (lowercased) matches an entry in the sold-names set**: skip
+it and add it to a "skipped — sold" list. Do not generate a label for it.
 
 **If list_price cannot be parsed**: skip that item and note it in the final
 report.
@@ -123,7 +141,14 @@ Tell the user:
 > Generated `garage-sale-labels-<date>.html` — N labels across M pages.
 > Open in your browser and print: Cmd+P, paper A4, margins None, scale 100%.
 
+If any items were skipped because they matched a sold entry in tracker.json,
+list them:
+
+> Skipped (already sold): Item Name A, Item Name B, …
+
 If any items were skipped (unparseable price): list them by folder name.
+
+If tracker.json was absent: note that sold-item filtering was skipped.
 
 ---
 
