@@ -401,7 +401,16 @@ The mode runs in four phases:
   Orchestration in `browser-automation.md` § "Refresh Mode — Phase R1
   delete loop"; locators in `facebook-marketplace.md` § "Delete
   listing locators (Refresh Mode Phase R1)".
-- **Phase R2 — Recreate at new price** *(added in Sub-task #3/#4)*.
+- **Phase R2 — Recreate at new price.** Pre-fill the Phase 4 form
+  payload from the item's `listing.md` (Ad copy block + on-disk
+  photos), run Folder Mode Phase 4 Steps 1–6 verbatim, then on URL
+  capture run `scripts/refresh_listing_md_update.py` to update the
+  `**URL:**` / `**Date:**` lines and append a `## Refresh history`
+  bullet — `**Price:**` and `## Comps` stay byte-identical. Recreate
+  failure leaves `listing.md` alone so the resumable state for
+  Sub-task #5 is intact. Sub-task #3 ships **one item, constant
+  price**; the −10% clamp-to-floor calculator arrives in Sub-task #4.
+  Detail in `refresh-strategy.md` § "Phase R2 — recreate at new price".
 - **Phase R3 — Summary** *(added in Sub-task #6)*.
 
 For full Phase R0 detail — classification rules, parser contracts,
@@ -445,10 +454,22 @@ Refresh Mode triggers, before walking any folder.
    * `deferred` rows are visible but not acted on this session.
    * User can edit the list inline (e.g. "skip the bike, push the
      kettlebell ahead of the rugs") before continuing.
+   * **Live-price override.** The `**Price:**` field in `listing.md`
+     is a snapshot from initial publish — not authoritative for the
+     current live FB price (the user manually drops prices post-publish
+     without syncing back). Ask once before locking in the set:
+     *"Any item where the current live FB price differs from the
+     listing.md snapshot? Paste `<item>: $X` per line, or reply `none`."*
+     Keep overrides **in-memory for this session only** — never
+     write back to `listing.md`. Phase R2 uses the override as both
+     the old and new recreate price (constant-price slice).
 
-Phase R1 onward is added in subsequent sub-tasks; until then, R0
-hands the confirmed queued set back to the user as a list of
-subfolder names they'll act on manually.
+After confirmation, Phase R1 deletes each item in the queued set
+(see `references/browser-automation.md` § "Refresh Mode — Phase R1
+delete loop"), then Phase R2 recreates it (§ "Phase R2 — recreate at
+new price" in `refresh-strategy.md`). In the Sub-task #3 slice the
+queued set is exactly **one item** — multi-item handling and the
+30–90 s inter-item delay come in Sub-task #5.
 
 ---
 
@@ -607,10 +628,11 @@ These apply in Folder Mode. They are hard rules — not suggestions.
   hygiene. Read in Phase 4.
 - `references/refresh-strategy.md` — Refresh Mode reference: why
   delete-and-relist, Phase R0 classification rules + parser contracts,
-  session cap + data-loss warning behaviour, `no-url` no-write-back rule,
-  deterministic fixture pointer. Read when `/resell-au refresh` triggers,
-  before walking the folder. Subsequent sub-tasks append later phases
-  (R1 / R2 / R3) here rather than in `SKILL.md`.
+  session cap + data-loss warning behaviour, `no-url` no-write-back
+  rule, Phase R2 recreate orchestration + `listing.md` updater
+  contract, run-state JSON shape + resume semantics, deterministic
+  fixture pointers (R0 + R2). Read when `/resell-au refresh` triggers,
+  before walking the folder.
 
 ---
 

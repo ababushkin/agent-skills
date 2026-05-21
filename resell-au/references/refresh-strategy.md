@@ -12,7 +12,7 @@ sub-task in the parent design (ABA-152) appends its phase here:
 |---|---|---|
 | R0 | Discovery & classification (read-only) | Sub-task #1 ✓ |
 | R1 | Delete existing listing on FB | Sub-task #2 ✓ — orchestration in `browser-automation.md` § "Refresh Mode — Phase R1 delete loop"; locators in `facebook-marketplace.md` § "Delete listing locators (Refresh Mode Phase R1)" |
-| R2 | Recreate at new price | Sub-task #3 + #4 |
+| R2 | Recreate at new price | Sub-task #3 ✓ (constant price, one item) — orchestration in § "Phase R2 — recreate at new price" below; listing.md updater at `scripts/refresh_listing_md_update.py`. Price-drop calculator + multi-item handling layer in via Sub-tasks #4 / #5. |
 | R3 | Summary | Sub-task #6 |
 
 When a later sub-task fires, append its phase to this file rather than
@@ -188,3 +188,187 @@ The fixture is parser-correctness only. End-to-end verification — the
 real eval for the slice — is a hand-run against `~/Desktop/things-for-sale/`
 with the classification table sanity-checked against what the operator
 expects to see.
+
+## Phase R2 — recreate at new price
+
+Phase R2 runs after R1 has confirmed deletion for the current item
+(`status: deleted` in the run-state JSON, `delete_detection`
+populated). The slice that introduced it (Sub-task #3) handles
+**one item at a time, constant price** — Sub-task #4 layers the
+−10% clamp-to-floor calculator on top, Sub-task #5 introduces
+multi-item batching and the resume contract.
+
+R2 reuses Folder Mode Phase 4 Steps 1–6 verbatim — the recreate
+form is the same `/marketplace/create/item` flow regardless of
+whether it's a brand-new listing or a refresh. The only differences
+are (a) **pre-fill data comes from `listing.md`** rather than from
+Phase 1 photo-drafted output, and (b) on success, the `listing.md`
+updater (`scripts/refresh_listing_md_update.py`) runs instead of the
+Phase 4 writer.
+
+### Pre-conditions
+
+- Phase R1 ran on this item with terminal state `status: deleted`
+  and `delete_detection ∈ {redirect, listing_gone_copy, row_missing}`.
+  R2 must NOT run if deletion was unconfirmed
+  (`delete_detection: "timeout_manual"`) — duplicate-listing risk is
+  the whole reason R1 stop-the-lines.
+- Recreate price is decided. In this slice that's: live-price
+  override from R0 if the operator provided one; else `**Price:**`
+  from `listing.md`. Both old and new prices in the refresh-history
+  bullet use this same value (constant-price slice).
+
+### Step R2.1 — pre-fill the form payload from listing.md
+
+Parse the item's `listing.md` for the recreate inputs:
+
+| Phase 4 field | Source line in listing.md |
+|---|---|
+| Title | `**Title:**` in `## Ad copy` |
+| Price | live-price override OR `**Price:**` in `## Ad copy` |
+| Category | `**Category:**` in `## Ad copy` |
+| Condition | `**Condition:**` in `## Ad copy` |
+| Description | `**Description:**` body in `## Ad copy` |
+| Location | `**Location:**` in `## Ad copy` |
+| Photos | every image file in the item's subfolder, in lexical filename order |
+
+Photos are not recorded in `listing.md` — they live on disk in the
+same subfolder Folder Mode Phase 4 originally uploaded from, so a
+lexical-order listing of `.jpg` / `.jpeg` / `.png` / `.heic` files
+gives the same photo set. Cap 10 — same as Phase 4.
+
+### Step R2.2 — drive the recreate (Phase 4 Steps 1–6)
+
+Run `browser-automation.md` § "The loop (one item, one platform)"
+Steps 1 through 6 verbatim. The outcome is one of:
+
+- `post_publish_detection: "url_match"` — new listing URL captured.
+- `post_publish_detection: "your_listings_redirect"` or
+  `"timeout_manual"` — Publish click landed, but the URL wasn't
+  captured by the polling loop. Ask the operator to paste it, same
+  flow as Phase 4 Step 6.
+
+If the recreate fails at any step (snapshot mismatch, captcha,
+publish timeout with no URL pasted by the operator):
+
+- **Do NOT touch `listing.md`.** Leaving it alone means the next
+  run sees this item as `no-url` (since no URL was captured) and the
+  operator can hand-fix or retry — the resumable state Sub-task #5
+  picks up.
+- Update the run-state JSON to `status: deleted` (not `recreated`)
+  and populate `failure_reason` with a short string.
+- Stop the session here. Multi-item batching is Sub-task #5.
+
+### Step R2.3 — update listing.md
+
+When a new URL is available (either from `url_match` or operator
+paste), run the updater:
+
+```bash
+python3 <skill_dir>/scripts/refresh_listing_md_update.py \
+    <item_subfolder>/listing.md \
+    --old-url   "<old URL from run-state>" \
+    --new-url   "<new URL>" \
+    --age-days  <age_days from run-state> \
+    --old-price <recreate price> \
+    --new-price <recreate price>
+```
+
+The script (deterministic, byte-identical on Comps):
+
+- Replaces `**URL:**` with the new URL (inserts the line after
+  `**Platform:**` if absent — the `no-url` paste-in-R0 case).
+- Replaces `**Date:**` with today (`REFRESH_R2_TODAY=YYYY-MM-DD`
+  overrides for deterministic tests).
+- Leaves `**Price:**` byte-identical.
+- Creates or appends `## Refresh history` between `## Seller notes`
+  and `## Comps`, adding one bullet:
+  ```
+  - YYYY-MM-DD (refresh #N): $X → $Y. Old URL: <old>. New URL: <new>. Age at refresh: Nd.
+  ```
+  The refresh number increments from any existing `(refresh #N)`
+  bullet in the section.
+- Refuses to write if the `## Comps` block (heading to end-of-file)
+  is not byte-identical — internal safety guard against the
+  refresh history insertion accidentally clobbering captured comp
+  data.
+
+Pass `--dry-run` to print to stdout instead of mutating the file
+(used by the regression tests in `tests/check_refresh_r2.sh`).
+
+### Step R2.4 — finalise run-state
+
+On successful update:
+
+```
+status: recreated
+new_url: <captured URL>
+```
+
+`delete_detection` was already populated by R1 and is carried
+forward unchanged.
+
+## Refresh Mode run-state file
+
+Written to `<target_folder>/.resell-au-refresh-<YYYYMMDD-HHMM>.json`
+when R2 picks up its item. Refresh runs use a separate file from
+Folder Mode runs because the per-item shape differs (no comp block,
+no platforms map — refresh is single-platform, single-action).
+
+```json
+{
+  "run_started": "ISO 8601 timestamp",
+  "target_folder": "/path/to/folder",
+  "session_cap": 5,
+  "items": [
+    {
+      "subfolder": "kettlebell",
+      "title": "12kg Kettlebell — like new",
+      "old_url": "https://www.facebook.com/marketplace/item/111/",
+      "old_price": 45,
+      "new_price": 45,
+      "floor": 35,
+      "age_days": 12,
+      "refresh_count_before": 0,
+      "status": "pending | deleted | recreated | failed | skipped",
+      "delete_detection": "redirect | listing_gone_copy | row_missing | timeout_manual | null",
+      "new_url": "https://www.facebook.com/marketplace/item/222/ | null",
+      "failure_reason": "string | null"
+    }
+  ]
+}
+```
+
+Resume semantics (mirrors Folder Mode):
+
+| Terminal state | Meaning |
+|---|---|
+| `pending` | Not started — R1 has not yet deleted. Start from R1. |
+| `deleted` | R1 succeeded but R2 did not capture a new URL. Resume from R2 — the OLD listing is already gone. Do not re-run R1 (would 404). |
+| `recreated` | R2 succeeded, `listing.md` updated. Item is done. |
+| `failed` / `skipped` | Operator-decided terminal states. Do not auto-retry; the operator chooses. |
+
+The `deleted` row is the resumable state Sub-task #5 picks up. The
+single-item slice never exercises multi-item resume, but the field
+shape is fixed here so the resume logic has a stable contract to
+build on.
+
+## Test fixture (Phase R2 updater)
+
+A deterministic fixture set covering the three updater invariants
+lives at `tests/fixtures/refresh-r2/`:
+
+| Case | Invariant |
+|---|---|
+| `case-1-full-with-comps` | First refresh on a complete `listing.md`: URL + Date replaced, Price unchanged, Refresh history section created, Comps block byte-identical. |
+| `case-2-second-refresh` | A second refresh appends bullet `#2` (number auto-increments). Comps block stays byte-identical. |
+| `case-3-no-url-no-comps` | `**URL:**` line inserted after `**Platform:**` (the post-`no-url`-paste case). Refresh history appended at end of file when no `## Comps` section exists. Omitting `--old-price`/`--new-price` produces a `price unchanged` bullet. |
+
+Run after any change to `refresh_listing_md_update.py`:
+
+```bash
+bash <skill_dir>/tests/check_refresh_r2.sh
+```
+
+`REFRESH_R2_TODAY=2026-05-21` is locked inside the script so the
+generated dates match the goldens.
