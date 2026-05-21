@@ -18,7 +18,7 @@ description: >-
 # Resell AU
 
 Help the user sell their stuff for a fair price, fast, with zero extra effort.
-The skill has **three modes** that share the same pricing and ad-copy logic:
+The skill has **two modes** that share the same pricing and ad-copy logic:
 
 - **Text mode** — user types/pastes an item or list of items; you output
   copy-paste-ready listing block(s) and seller notes. No browser, no
@@ -27,10 +27,6 @@ The skill has **three modes** that share the same pricing and ad-copy logic:
   You walk each subfolder, draft listings from photos, price each item, then
   drive a real Chrome session to fill FB Marketplace forms and automatically
   click Publish on the review screen.
-- **Refresh mode** — user runs `/resell-au refresh <folder>`. You walk
-  already-published items, classify which are stale (≥7 days old), then
-  delete-and-relist them on FB Marketplace at a fresh price to reset the
-  algorithm's honeymoon visibility window. See Refresh Mode workflow below.
 
 The user is in **Melbourne, Australia** — prices are **AUD**, market is
 **Facebook Marketplace / local garage sale**, buyers **haggle**, and pickup is
@@ -376,73 +372,6 @@ didn't run. Full layer semantics and `skipped_reason` values live in
 
 ---
 
-## Refresh Mode workflow
-
-Invoked when the user runs `/resell-au refresh <folder>` (defaults to
-`~/Desktop/things-for-sale/` if no folder is given). Refresh Mode
-delete-and-relists stale FB Marketplace listings to reset the FB
-algorithm's "honeymoon" visibility window — a ~30% message-rate lift
-in reseller-community data.
-
-The mode runs in four phases:
-
-- **Phase R0 — Discovery & classification** *(this slice)*. Read-only
-  walk of the target folder. Classifies each subfolder's `listing.md`
-  into `refresh-eligible` / `too-fresh` / `no-url` / `sold` /
-  `not-published`, applies a 5-per-session cap, and prints a candidate
-  table for the user to confirm.
-- **Phase R1 — Delete existing listing** *(added in Sub-task #2)*.
-- **Phase R2 — Recreate at new price** *(added in Sub-task #3/#4)*.
-- **Phase R3 — Summary** *(added in Sub-task #6)*.
-
-For full Phase R0 detail — classification rules, parser contracts,
-session-cap behaviour, `no-url` no-write-back rule, data-loss warning,
-deterministic fixture — read `references/refresh-strategy.md` when
-Refresh Mode triggers, before walking any folder.
-
-### Phase R0 — high-level steps
-
-1. **Pre-flight.** Same as Folder Mode Phase 0: Chrome reachable on
-   port 9222, FB Marketplace logged in. Bail early if either fails —
-   later phases need the browser.
-
-2. **Run the classifier script.** It walks subfolders, parses each
-   `listing.md` against strict regex contracts, and prints the
-   candidate table (including the one-line data-loss warning above
-   it) to stdout:
-
-   ```bash
-   python3 <skill_dir>/scripts/refresh_r0_classify.py <target_folder>
-   ```
-
-   Do not re-implement classification inline — the script is the
-   single source of truth for what counts as `refresh-eligible`. The
-   strict regex contracts mean a hand-edited `listing.md` that does
-   not match the canonical Phase 4 format is treated as missing rather
-   than guessed at (the worst classification error is a false-positive
-   `refresh-eligible` that deletes the wrong listing).
-
-3. **Print the table to the user verbatim.** The script's output is
-   already a complete candidate-table block; show it as-is.
-
-4. **Handle `no-url` rows interactively.** For each `no-url` item,
-   prompt the user to paste the listing URL. **Keep the paste
-   in-memory for this session only** — do not write back to
-   `listing.md`. If the user wants the URL persisted, they need to
-   add the `**URL:**` line manually.
-
-5. **Confirm with the user** that the queued set looks right before
-   handing off to Phase R1.
-   * `deferred` rows are visible but not acted on this session.
-   * User can edit the list inline (e.g. "skip the bike, push the
-     kettlebell ahead of the rugs") before continuing.
-
-Phase R1 onward is added in subsequent sub-tasks; until then, R0
-hands the confirmed queued set back to the user as a list of
-subfolder names they'll act on manually.
-
----
-
 ## Pricing model
 
 Anchor on **sold data, not asking data**. Run the 4-layer comp-search
@@ -596,12 +525,6 @@ These apply in Folder Mode. They are hard rules — not suggestions.
 - `references/facebook-marketplace.md` — FB-specific field map, photo rules,
   category mapping cheat sheet, captcha/2FA/login-wall handling, ban-avoidance
   hygiene. Read in Phase 4.
-- `references/refresh-strategy.md` — Refresh Mode reference: why
-  delete-and-relist, Phase R0 classification rules + parser contracts,
-  session cap + data-loss warning behaviour, `no-url` no-write-back rule,
-  deterministic fixture pointer. Read when `/resell-au refresh` triggers,
-  before walking the folder. Subsequent sub-tasks append later phases
-  (R1 / R2 / R3) here rather than in `SKILL.md`.
 
 ---
 

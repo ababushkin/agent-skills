@@ -1,0 +1,22 @@
+⚠️  Refresh = delete + relist on FB Marketplace.
+    DELETE LOSES: saves, chat history, view count.
+    This is the established tactic for resetting the FB algorithm; the loss is the price.
+
+Found 10 items: 5 queued, 1 deferred, 1 no-url, 1 too-fresh, 2 silently skipped (sold or no listing.md).
+
+## Candidate table
+
+| Item | Age | Current | Proposed | Floor | Action |
+|------|-----|---------|----------|-------|--------|
+| eligible-60d | 60d | $50 | $45 | $35 | refresh |
+| eligible-30d | 30d | $100 | $90 | $70 | refresh |
+| eligible-20d | 20d | $40 | $35 | $35 | refresh |
+| eligible-14d | 14d | $80 | $70 | $60 | refresh |
+| eligible-10d | 10d | $30 | $27 | $25 | refresh |
+| no-url-15d | 15d | $60 | $55 | $45 | no URL — paste required |
+| too-fresh-3d | 3d | $40 | — | — | too-fresh, skip |
+| eligible-8d | 8d | $25 | $22 | $20 | deferred to next session |
+
+### Deferred to next session (1 item)
+Rate-limit hygiene caps refresh at 5 per session.
+Re-run `/resell-au refresh ...` after ≥30 minutes to drain the queue.
