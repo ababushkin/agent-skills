@@ -5,19 +5,16 @@ When the user runs `/resell-au refresh <folder>`, the skill enters
 Folder Mode. Refresh Mode delete-and-relists stale FB Marketplace
 listings to reset the FB algorithm's "honeymoon" visibility window.
 
-This file is the single home for refresh-only reference detail. Each
-sub-task in the parent design (ABA-152) appends its phase here:
+This file is the single home for refresh-only reference detail. Phase
+index (all sections live below):
 
-| Phase | What it does | Status |
+| Phase | What it does | Where to read |
 |---|---|---|
-| R0 | Discovery & classification (read-only) | Sub-task #1 ✓ + floor gate from Sub-task #4 ✓ |
-| R1 | Delete existing listing on FB | Sub-task #2 ✓ — orchestration in `browser-automation.md` § "Refresh Mode — Phase R1 delete loop"; locators in `facebook-marketplace.md` § "Delete listing locators (Refresh Mode Phase R1)" |
-| R2 | Recreate at new price | Sub-task #3 ✓ (constant price, one item) + Sub-task #4 ✓ wires the price-drop calculator in. Orchestration in § "Phase R2 — recreate at new price" below; listing.md updater at `scripts/refresh_listing_md_update.py`; calculator at `scripts/refresh_pricing.py`. |
-| R1+R2 multi-item loop | Session cap enforcement, inter-item delays, resume on restart | Sub-task #5 ✓ — orchestration in § "Phase R1+R2 multi-item loop"; run-state helper at `scripts/refresh_runstate.py`. |
-| R3 | Summary | Sub-task #6 |
-
-When a later sub-task fires, append its phase to this file rather than
-inflating `SKILL.md` — the top-level skill index should stay light.
+| R0 | Discovery & classification (read-only) — candidate table, session cap, floor gate | § "Phase R0 — discovery & classification" |
+| R1 | Delete existing listing on FB | `browser-automation.md` § "Refresh Mode — Phase R1 delete loop"; locators in `facebook-marketplace.md` § "Delete listing locators" |
+| R2 | Recreate at new price + update `listing.md` | § "Phase R2 — recreate at new price"; scripts: `refresh_listing_md_update.py`, `refresh_pricing.py` |
+| Multi-item loop | Session cap, inter-item delays, resume on restart | § "Phase R1+R2 multi-item loop"; script: `refresh_runstate.py` |
+| R3 | Summary table | § "Phase R3 — summary output" |
 
 ## Why delete-and-relist
 
@@ -170,10 +167,9 @@ then Phase R1 begins.
 
 ### Interaction with the live-price override
 
-The live-price override (already part of R0 from Sub-task #1) runs
-**before** the floor gate. It updates the "current price" the
-calculator sees, in-memory only — `listing.md` is never written
-back. Sequence:
+The live-price override runs **before** the floor gate. It updates
+the "current price" the calculator sees, in-memory only — `listing.md`
+is never written back. Sequence:
 
 1. R0 classifier reads `**Price:**` from each `listing.md`. This is
    the *snapshot at publish time*, not always the live FB price.
@@ -248,33 +244,12 @@ For deterministic fixture testing, set `REFRESH_R0_TODAY=YYYY-MM-DD`
 to override the "today" date so age classifications stay stable across
 runs.
 
-## Test fixture
-
-A deterministic fixture covering all 5 buckets plus the session-cap
-deferral case lives at `tests/fixtures/refresh-r0/`. After any change
-to the classifier, run the verification script:
-
-```bash
-bash <skill_dir>/tests/check_refresh_r0.sh
-```
-
-The script runs the classifier against the fixture with
-`REFRESH_R0_TODAY=2026-05-21` locked, then diffs the output against
-`fixtures/refresh-r0.golden.txt`. Exit 0 = pass; non-zero = the
-classifier's behaviour changed and the golden file needs review before
-updating.
-
-The fixture is parser-correctness only. End-to-end verification — the
-real eval for the slice — is a hand-run against `~/Desktop/things-for-sale/`
-with the classification table sanity-checked against what the operator
-expects to see.
-
 ## Phase R2 — recreate at new price
 
 Phase R2 runs after R1 has confirmed deletion for the current item
 (`status: deleted` in the run-state JSON, `delete_detection`
-populated). Still **one item at a time** — Sub-task #5 introduces
-multi-item batching and the resume contract. As of Sub-task #4, the
+populated). One item at a time — multi-item batching and resume
+semantics are documented in § "Phase R1+R2 multi-item loop". The
 recreate price comes from the R0 floor-gate resolution (default
 −10% clamp-to-floor, with per-item and bulk overrides) rather than
 the listing's snapshot.
@@ -337,11 +312,12 @@ publish timeout with no URL pasted by the operator):
 
 - **Do NOT touch `listing.md`.** Leaving it alone means the next
   run sees this item as `no-url` (since no URL was captured) and the
-  operator can hand-fix or retry — the resumable state Sub-task #5
-  picks up.
+  operator can hand-fix or retry — the multi-item loop's resume
+  contract picks up from this state.
 - Update the run-state JSON to `status: deleted` (not `recreated`)
-  and populate `failure_reason` with a short string.
-- Stop the session here. Multi-item batching is Sub-task #5.
+  and populate `failure_reason` with a short string. The multi-item
+  loop then surfaces the item as `action: manual` on the next
+  `plan` call.
 
 ### Step R2.3 — update listing.md
 
@@ -453,9 +429,10 @@ init):
 ]
 ```
 
-`refresh_count_before` is optional (defaults to 0); the agent can
-derive it from existing `## Refresh history` bullets if needed but
-the script does not require it.
+`refresh_count_before` is optional (defaults to 0) and informational
+only — the listing.md updater derives the canonical refresh number
+from existing `## Refresh history` bullets in the file, so this
+field doesn't need to be accurate.
 
 ### Step M1 — defer-notice before R1 starts
 
@@ -522,16 +499,19 @@ python3 <skill_dir>/scripts/refresh_runstate.py update <runstate_path> \
 
 `update` is atomic (temp + rename) so a kill mid-write can't
 corrupt the file. The corresponding `*_at` field
-(`pending_at` / `deleted_at` / `recreated_at` / `failed_at`) is
-auto-stamped on every status change — the timestamps let the
-operator (and the acceptance-criteria check) verify the 30–90 s
-inter-item gap from the file alone, no shell history needed.
+(`deleted_at` / `recreated_at` / `failed_at`) is auto-stamped on
+every status transition — `pending_at` exists in the schema but
+is not currently stamped by `init` (tracked separately as a
+follow-up). The recreated/failed timestamps let the operator
+verify the 30–90 s inter-item gap from the file alone, no shell
+history needed. Note that `skipped` status currently stamps
+`failed_at` (no separate `skipped_at`); the R3 summary
+disambiguates by reading `status`, not the timestamp.
 
 ### Resume in practice
 
-The headline ABA-157 acceptance criterion is: kill the run after
-item 0 is `deleted` but before `recreated`, re-invoke
-`/resell-au refresh <folder>`. The skill then:
+Headline scenario: kill the run after item 0 is `deleted` but before
+`recreated`, re-invoke `/resell-au refresh <folder>`. The skill then:
 
 1. Calls `init <folder>` (no `--queued-json` needed) — picks up
    the existing `.resell-au-refresh-…json`.
@@ -588,74 +568,89 @@ Resume semantics:
 | `skipped` | Operator-decided skip (e.g. unrecoverable mismatch). Do not retry. |
 | `failed` | Phase failed and operator has not yet decided next step. Re-running `init` will resume the file; `plan` surfaces these as `action: manual` so the operator chooses (edit run-state by hand, or fix the underlying issue and re-run). |
 
-The `*_at` fields are auto-stamped by
-`scripts/refresh_runstate.py update` so the inter-item delay
-verification works off the file alone (the ABA-157 acceptance
-criterion explicitly asks for "each item-to-item gap is between
-30 and 90 seconds, verify from run-state timestamps").
+The `deleted_at` / `recreated_at` / `failed_at` fields are
+auto-stamped by `scripts/refresh_runstate.py update` so the
+inter-item-delay verification (each item-to-item gap between
+30 and 90 s) works off the file alone — no shell history needed.
+`pending_at` exists in the schema but is currently always `null`
+(`init` does not stamp it); see follow-up.
 
-## Test fixture (Phase R2 updater)
+`session_cap` is written into the run-state at `init` for
+observability (it tells anyone inspecting the file "this run was
+capped at 5"). The actual cap is enforced upstream in
+`refresh_r0_classify.py` — the loop itself does not re-read this
+field. `refresh_count_before` is similarly informational; the
+listing.md updater derives the canonical refresh number from
+existing `## Refresh history` bullets in the file rather than
+trusting this field.
 
-A deterministic fixture set covering the three updater invariants
-lives at `tests/fixtures/refresh-r2/`:
+## Phase R3 — summary output
 
-| Case | Invariant |
-|---|---|
-| `case-1-full-with-comps` | First refresh on a complete `listing.md`: URL + Date replaced, Price unchanged, Refresh history section created, Comps block byte-identical. |
-| `case-2-second-refresh` | A second refresh appends bullet `#2` (number auto-increments). Comps block stays byte-identical. |
-| `case-3-no-url-no-comps` | `**URL:**` line inserted after `**Platform:**` (the post-`no-url`-paste case). Refresh history appended at end of file when no `## Comps` section exists. Omitting `--old-price`/`--new-price` produces a `price unchanged` bullet. |
+After the multi-item loop drains (every queued item has terminal
+status `recreated` / `failed` / `skipped`), Phase R3 reads the
+run-state JSON and prints one summary block to the user. R3 is
+read-only: no further `listing.md` updates, no browser actions.
 
-Run after any change to `refresh_listing_md_update.py`:
+### Output format
 
-```bash
-bash <skill_dir>/tests/check_refresh_r2.sh
+```
+## Refresh summary
+
+5 items processed: 4 refreshed, 0 skipped, 1 failed.
+
+| Item | Status | Detail |
+|------|--------|--------|
+| kettlebell | refreshed | $45 → $40 — https://www.facebook.com/marketplace/item/222/ (was 111) |
+| ikea-rugs  | refreshed | $40 → $35 — https://www.facebook.com/marketplace/item/444/ (was 333) |
+| violin     | refreshed | $100 → $90 — https://www.facebook.com/marketplace/item/666/ (was 555) |
+| bookshelf  | refreshed | $80 → $72 — https://www.facebook.com/marketplace/item/888/ (was 777) |
+| chair      | failed    | delete timeout — operator skipped |
+
+Deferred to next session (2 items, re-run after ≥30 min):
+- couch (10d)
+- mirror (8d)
 ```
 
-`REFRESH_R2_TODAY=2026-05-21` is locked inside the script so the
-generated dates match the goldens.
+### Per-row composition
 
-## Test suite (price-drop calculator)
+| Run-state `status` | Row "Status" | Row "Detail" |
+|---|---|---|
+| `recreated` | `refreshed` | `$<old_price> → $<new_price> — <new_url> (was <old_id>)` where `<old_id>` is the digits in `old_url` between `/marketplace/item/` and the trailing `/` |
+| `skipped` | `skipped` | `failure_reason` verbatim (operator-typed at the stop-the-line `continue` prompt) |
+| `failed` | `failed` | `failure_reason` verbatim |
+| `pending` / `deleted` | — | should not appear at R3 — loop only exits on terminal states. If present, the loop terminated abnormally; surface a stop-the-line message instead of the summary table |
 
-`scripts/refresh_pricing.py` is covered by `tests/test_refresh_pricing.py`
-— a standard `unittest` module rather than a golden-file diff (the
-calculator returns integers, not text). Cases:
+### Deferred section
 
-| Class | What it pins |
-|---|---|
-| `AcceptanceCriteria` | The four worked examples from ABA-156 ($40/$35→$35, $40/$30→$35, $100/$80→$90, $25/$20→$23). |
-| `PerItemOverrides` | `same` keeps current; `$X` passes through if ≥floor; `$X` clamps up if <floor; clamping uses the absent-floor fallback when needed. |
-| `BulkOverride` | `drop everything 15%` shaves 15%; clamps to floor when the drop would breach it; `keep all prices` is `drop_rate=0.0`. |
-| `RoundingBands` | Round-half-up at each band boundary (under $30, $30–$200, $200–$1000, $1000+). Guards the seller-rounding contract. |
-| `AbsentFloorFallback` | `list_price × 0.85` fallback kicks in when `Floor:` is missing from seller notes. |
-| `R0ClassifierGoldenStability` | Same inputs as `tests/fixtures/refresh-r0/` so a calculator change that would break the R0 golden gives a targeted failure first. |
+The R0-classified items that were over the 5-per-session cap are not
+in the run-state JSON (only the queued 5 are). R3 sources them from
+the R0 classifier output retained in memory for the session. Format
+is `<subfolder> (<age_days>d)` per line, sorted oldest-first to
+match R0's queueing order.
 
-Run after any change to `refresh_pricing.py` (or the R0 classifier,
-since R0 now imports the calculator):
+If zero items were deferred, **omit the entire `Deferred to next
+session` section** — no value in printing empty noise.
 
-```bash
-bash <skill_dir>/tests/check_refresh_pricing.sh
-```
+### Total processed count
 
-## Test suite (run-state helper)
+Header counts come from the run-state items array — total = items in
+the run-state (not including R0-deferred items). The sum of
+refreshed + skipped + failed equals total processed.
 
-`scripts/refresh_runstate.py` is covered by `tests/test_refresh_runstate.py`
-— pure unit tests, since the script returns JSON, not text suitable
-for a golden-file diff. Cases:
+## Tests and fixtures
 
-| Class | What it pins |
-|---|---|
-| `BuildPlanResumeClassification` | Each `status → action` mapping from the resume table: `pending → r1`, `deleted → r2` (the headline ABA-157 resume case), `recreated`/`skipped → done`, `failed → manual`. Plus item-index preservation. |
-| `ApplyUpdateStatusTransitions` | Status updates auto-stamp the matching `*_at` field (`pending_at`, `deleted_at`, `recreated_at`, `failed_at`) so the inter-item-delay check works off the file alone. Unknown status / out-of-range item raise. |
-| `FindLatestAndUnfinished` | `find_latest_runstate` picks the lex-greatest filename. `has_unfinished_work` returns True for any `pending` / `deleted` / `failed` item; False for all-terminal (`recreated` / `skipped`). |
-| `RunstateFilenameFormat` | The `YYYYMMDD-HHMM` filename pattern is the resume contract — zero-pad behaviour pinned explicitly. |
-| `CmdInitIntegration` | End-to-end CLI behaviour: fresh init creates a new file from `--queued-json`; resume returns the same file and ignores `--queued-json`; all-terminal file + no `--queued-json` errors; all-terminal file + new queued list creates a new file; missing required field in queued JSON rejected. |
+All scripts ship with deterministic fixtures or unit tests so the
+contracts above are regression-checked. Run after touching the
+matching script.
 
-Run after any change to `refresh_runstate.py`:
+| Script | Tests | Invocation | Env override |
+|---|---|---|---|
+| `refresh_r0_classify.py` | `tests/fixtures/refresh-r0/` (golden diff covering all 5 buckets + cap deferral) | `bash tests/check_refresh_r0.sh` | `REFRESH_R0_TODAY=YYYY-MM-DD` |
+| `refresh_listing_md_update.py` | `tests/fixtures/refresh-r2/` (3 cases: first-refresh-with-comps, second-refresh, no-url-no-comps) | `bash tests/check_refresh_r2.sh` | `REFRESH_R2_TODAY=YYYY-MM-DD` |
+| `refresh_pricing.py` | `tests/test_refresh_pricing.py` (unittest: acceptance cases, per-item + bulk overrides, rounding bands, absent-floor fallback) | `bash tests/check_refresh_pricing.sh` | — |
+| `refresh_runstate.py` | `tests/test_refresh_runstate.py` (unittest: status-action mapping, `*_at` auto-stamp, find-latest, filename format, init CLI integration) | `bash tests/check_refresh_runstate.sh` | `REFRESH_RUNSTATE_NOW=YYYY-MM-DDTHH:MM:SS` |
 
-```bash
-bash <skill_dir>/tests/check_refresh_runstate.sh
-```
-
-`REFRESH_RUNSTATE_NOW=2026-05-21T14:00:00` is set inside each test
-that needs deterministic timestamps; the same env var works for
-shell-debug runs.
+The fixtures are parser-correctness only. End-to-end verification —
+the real eval — is a hand-run against `~/Desktop/things-for-sale/`
+with the candidate table and summary table sanity-checked against
+what the operator expects.

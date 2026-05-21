@@ -302,6 +302,11 @@ Write this exact template to `<item_subfolder>/listing.md` in Phase 4 Step 7:
 
 ### Fallback notes
 <only present when Layer 4 ran>
+
+## Refresh history
+<only present after the item has been refreshed at least once>
+
+- YYYY-MM-DD (refresh #1): $X → $Y. Old URL: <old>. New URL: <new>. Age at refresh: Nd.
 ```
 
 Rules for this file:
@@ -318,6 +323,14 @@ Rules for this file:
   write `- skipped (<reason>)` or `- 0 results` — auditability requires the
   agent shows what it tried. `<reason>` values are listed in
   `references/live-comp-search.md`.
+- **`## Refresh history` section** is **append-only** — written by
+  Phase R2 Step R2.3 (`scripts/refresh_listing_md_update.py`). The
+  section appears only after the first refresh; each subsequent
+  refresh appends one bullet, auto-incrementing the `(refresh #N)`
+  counter. `**Price:**` and `## Comps` stay byte-identical across
+  refreshes; only `**URL:**`, `**Date:**`, and this section change.
+  Detail in `references/refresh-strategy.md` § "Step R2.3 — update
+  listing.md".
 
 ### Phase 5 — Summary
 
@@ -422,12 +435,16 @@ The mode runs in four phases plus an orchestration loop:
   file is mutated in place — a kill after `deleted` but before
   `recreated` resumes from R2, not from R1). Detail in
   `refresh-strategy.md` § "Phase R1+R2 multi-item loop".
-- **Phase R3 — Summary** *(added in Sub-task #6)*.
+- **Phase R3 — Summary.** Reads the Refresh Mode run-state JSON and
+  prints a per-item outcome table (refreshed / skipped / failed) plus
+  a "deferred to next session" recap when the session cap held items
+  back. Format detail below in "Phase R3 — Summary".
 
-For full Phase R0 detail — classification rules, parser contracts,
+For full Refresh Mode detail — classification rules, parser contracts,
 session-cap behaviour, `no-url` no-write-back rule, data-loss warning,
-deterministic fixture — read `references/refresh-strategy.md` when
-Refresh Mode triggers, before walking any folder.
+floor gate, R2 recreate orchestration, multi-item loop resume
+semantics, deterministic fixtures — read `references/refresh-strategy.md`
+when Refresh Mode triggers, before walking any folder.
 
 ### Phase R0 — high-level steps
 
@@ -487,12 +504,55 @@ Refresh Mode triggers, before walking any folder.
    * User can edit the list inline (e.g. "skip the bike, push the
      kettlebell ahead of the rugs") before continuing.
 
-After confirmation, Phase R1 deletes each item in the queued set
-(see `references/browser-automation.md` § "Refresh Mode — Phase R1
-delete loop"), then Phase R2 recreates it (§ "Phase R2 — recreate at
-new price" in `refresh-strategy.md`). In the Sub-task #3 slice the
-queued set is exactly **one item** — multi-item handling and the
-30–90 s inter-item delay come in Sub-task #5.
+After confirmation, the R1+R2 multi-item loop runs the queued set
+end-to-end: Phase R1 deletes each item
+(`references/browser-automation.md` § "Refresh Mode — Phase R1
+delete loop"), Phase R2 recreates it
+(`references/refresh-strategy.md` § "Phase R2 — recreate at new
+price"), and the loop applies 30–90 s human-cadence delays between
+items, enforces the 5-per-session cap, and is resumable across
+restarts (`refresh-strategy.md` § "Phase R1+R2 multi-item loop").
+
+### Phase R3 — Summary
+
+After the loop terminates (every queued item is in a terminal state
+of `recreated`, `failed`, or `skipped`), read the Refresh Mode
+run-state JSON and print one summary block. Format:
+
+```
+## Refresh summary
+
+5 items processed: 4 refreshed, 0 skipped, 1 failed.
+
+| Item | Status | Detail |
+|------|--------|--------|
+| kettlebell | refreshed | $45 → $40 — https://.../item/222/ (was 111) |
+| ikea-rugs  | refreshed | $40 → $35 — https://.../item/444/ (was 333) |
+| violin     | refreshed | $100 → $90 — https://.../item/666/ (was 555) |
+| bookshelf  | refreshed | $80 → $72 — https://.../item/888/ (was 777) |
+| chair      | failed    | delete timeout — operator skipped |
+
+Deferred to next session (2 items, re-run after ≥30 min):
+- couch (10d)
+- mirror (8d)
+```
+
+Rules for the block:
+- **Header counts** match the run-state — sum of `recreated` /
+  `skipped` / `failed` items. Total processed = items in the
+  run-state (not including R0-deferred ones).
+- **Per-item Detail**:
+  - `refreshed` → `$<old_price> → $<new_price> — <new_url> (was <old_id>)`
+    where `<old_id>` is the numeric id from `old_url` for short reading.
+  - `skipped` → the operator-chosen reason from `failure_reason`
+    (typed at the stop-the-line `continue` prompt).
+  - `failed` → `failure_reason` verbatim.
+- **Deferred section** lists items that R0 classified
+  `refresh-eligible` but were over the 5-per-session cap. If zero
+  items deferred, omit the section entirely — no value in noise.
+- The block is printed verbatim and the run terminates. No write-back
+  to `listing.md` happens here; per-item `listing.md` updates already
+  happened in Phase R2 Step R2.3.
 
 ---
 
@@ -607,7 +667,8 @@ bundle, donate, scrap, or "fix the cord then it's worth ~$X".
 
 ## Hygiene & safety rules — non-negotiable
 
-These apply in Folder Mode. They are hard rules — not suggestions.
+These apply in Folder Mode and Refresh Mode. They are hard rules —
+not suggestions.
 
 1. **Verify before publishing.** On the review screen, confirm title, price,
    condition, and description match the approved copy before clicking Publish.
@@ -628,6 +689,32 @@ These apply in Folder Mode. They are hard rules — not suggestions.
 8. **Safety/legal product rules stand.** Used mattresses, child car seats,
    helmets, recalled goods etc. are flagged for non-resale before reaching
    Phase 4 — they never enter the auto-listing queue.
+
+### Refresh Mode only
+
+9. **5-per-session cap, ≥30 min between sessions.** Refresh Mode
+   processes at most 5 items per invocation; over-cap items defer
+   to a future session. Bursts >5 refreshes/hour are the
+   reseller-community shadowban signal — the cap is FB rate-limit
+   hygiene and is enforced in Phase R0 by `refresh_runstate.py`.
+   Wait ≥30 min before re-running on the same folder to drain the
+   deferred queue.
+10. **Snapshot before every click on the delete menu.** The R1 delete
+    flow (`More options` button → menu → `Delete listing` → confirm
+    modal → second-stage radio → `Next`) is DOM-brittle in the same
+    way as the Phase 4 create form. Re-snapshot between every click
+    and verify the next element exists before interacting with it.
+11. **Stop-the-line on undetected deletion.** If the 15 s post-delete
+    URL poll doesn't observe `unavailable_product=1` redirect or
+    "no longer available" copy, **do NOT proceed to recreate** —
+    duplicate-listing risk is bounded only by completing the delete
+    and confirming it. Surface a screenshot, hand to the operator,
+    wait for `continue` (skip recreate) or `manual-delete`.
+12. **Data-loss warning at Phase R0.** Print exactly once per session,
+    above the candidate table: delete-and-relist loses saves, chat
+    history, and view count. This is the price of resetting the FB
+    algorithm honeymoon and the operator needs to see it before
+    confirming the candidate set.
 
 ---
 
