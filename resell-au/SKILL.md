@@ -386,12 +386,21 @@ in reseller-community data.
 
 The mode runs in four phases:
 
-- **Phase R0 — Discovery & classification** *(this slice)*. Read-only
-  walk of the target folder. Classifies each subfolder's `listing.md`
-  into `refresh-eligible` / `too-fresh` / `no-url` / `sold` /
+- **Phase R0 — Discovery & classification.** Read-only walk of the
+  target folder. Classifies each subfolder's `listing.md` into
+  `refresh-eligible` / `too-fresh` / `no-url` / `sold` /
   `not-published`, applies a 5-per-session cap, and prints a candidate
-  table for the user to confirm.
-- **Phase R1 — Delete existing listing** *(added in Sub-task #2)*.
+  table for the user to confirm. Detail in `refresh-strategy.md`.
+- **Phase R1 — Delete existing listing.** For each item in the
+  confirmed queued set: open the Selling page filtered by title,
+  open the row's "More options" menu, click "Delete listing", verify
+  identity in the confirm modal, answer the follow-up "Did you sell
+  this item?" with "No, haven't sold", then poll the OLD listing URL
+  for the `unavailable_product=1` redirect signal (15 s budget). On
+  unconfirmed deletion, stop the line — do NOT proceed to recreate.
+  Orchestration in `browser-automation.md` § "Refresh Mode — Phase R1
+  delete loop"; locators in `facebook-marketplace.md` § "Delete
+  listing locators (Refresh Mode Phase R1)".
 - **Phase R2 — Recreate at new price** *(added in Sub-task #3/#4)*.
 - **Phase R3 — Summary** *(added in Sub-task #6)*.
 

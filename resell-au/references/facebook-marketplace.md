@@ -183,6 +183,86 @@ attempt during a real run; baked in here to avoid repeating them.
   Full protocol (success paths, redirect fallback, timeout handling) lives in
   `browser-automation.md` Step 6.
 
+## Delete listing locators (Refresh Mode Phase R1)
+
+FB Marketplace **does not expose a delete affordance on the public
+listing detail page** (`/marketplace/item/<id>/`) — only `Edit`,
+`Share`, `Mark out of stock`, and `Promote now` are present in the
+seller's view of their own listing. The `Edit listing` page
+(`/marketplace/edit/?listing_id=<id>`) also has no Delete button.
+
+The delete affordance lives **only on the Your-Listings page**
+(`/marketplace/you/selling/`), accessed per listing row via a
+"More options" button that opens a `popup="dialog"` menu.
+
+### Locating the target row
+
+The seller's listings page supports a server-side title filter via
+URL query param:
+
+```
+https://www.facebook.com/marketplace/you/selling?title_search=<URL-encoded title>
+```
+
+Use this rather than scrolling — the Selling page lazy-loads listings
+and the target may be far down. The Phase 4 listing title (from
+`listing.md` `**Title:**` line) is the natural filter input.
+
+Single-result narrowing usually works because the listing title is
+unique within a seller's set. If multiple rows match (e.g. user listed
+the same item twice), pick by `target_id=<listing_id>` in the
+`Promote now` link URL of the row — that's the only place the listing
+ID appears in the row markup.
+
+### Menu and confirm-dialog patterns
+
+The locators below are all label-driven (a11y tree), not CSS — DOM
+classes change quarterly but accessible-name conventions on FB
+Marketplace are stable.
+
+| Step | Selector pattern (accessible name) | Role | Notes |
+|---|---|---|---|
+| 1. Open menu | `"More options for <listing title>"` | button, `expandable haspopup="dialog"` | Per-row affordance on `/marketplace/you/selling/`. |
+| 2. Click Delete | `"Delete listing"` | menuitem | Inside the menu that opens. Other items: `Renew`, `Mark as pending`, `View listing`, `List in more places`, `Edit listing`, `View messages`. |
+| 3. First confirm | `"Delete"` | button | In modal `dialog "Delete listing"`. Cancel button is sibling. The modal verifies title + price before this click — read them and check against the expected listing before clicking. |
+| 4. Second-stage radio | `"No, haven't sold"` | radio | FB shows a follow-up `"Did you sell this item?"` step. For refresh-mode the truthful answer is "No, haven't sold" (not "Yes, sold …"). |
+| 5. Submit | `"Next"` | button | Disabled until a radio is selected. After click, the modal closes and the listing row disappears from the selling page. |
+
+The Phase R1 sub-section in `browser-automation.md` describes the
+end-to-end loop using these locators, including the snapshot-before-
+every-click rule and the 15s deletion-verification poll.
+
+### Native Renew menu item (signal for future variant)
+
+The `More options` menu also exposes a `Renew` menuitem with a
+disabled state of the form `"Renew (N days)"` until the cooldown
+elapses (FB allows Renew every 7 days). This is the no-data-loss
+alternative to delete-and-relist that the parent design (ABA-152)
+explicitly defers as a future `--use-renew` variant. Locator
+captured here so the variant can wire it later without re-exploring:
+
+```
+menuitem "Renew (N days)"  // disabled when cooldown still in effect
+menuitem "Renew"           // enabled when ready
+```
+
+### Deletion-verification signals
+
+After clicking the second-stage `Next` button, navigating the OLD
+listing URL (`/marketplace/item/<id>/`) produces both signals in
+parallel — either alone is sufficient for the 15s poll:
+
+| Signal | Evidence | Detection key |
+|---|---|---|
+| URL redirect | `window.location.href` becomes `…/marketplace/melbourne/?unavailable_product=1` (the `unavailable_product=1` query param is added by FB; pathname is no longer `/marketplace/item/<id>/`) | `delete_detection: "redirect"` |
+| Listing-gone copy | `document.body.innerText` contains "no longer available" or "isn't available" | `delete_detection: "listing_gone_copy"` |
+
+The `unavailable_product=1` query param is the cleanest single test —
+if it appears, the listing is confirmed deleted. The detail-page →
+redirect happens server-side, so the poll has to handle navigation
+within the 15s budget (don't `wait_for` here, same reason as Phase 4
+Step 6 — text-based wait won't catch the URL change).
+
 ## DOM stability notes
 
 FB Marketplace's DOM changes frequently (sometimes monthly during A/B tests).

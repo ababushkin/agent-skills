@@ -1,0 +1,27 @@
+{
+  "_comment": "Phase R1 hand-test (ABA-154). Target item was 1d old, not 7d+, because zero refresh-eligible items existed in ~/Desktop/things-for-sale/ at test time. Staleness override is documented in iteration-4 notes.md.",
+  "run_started": "2026-05-21T09:48:00+10:00",
+  "target_folder": "/Users/anton/Desktop/things-for-sale",
+  "session_cap": 5,
+  "items": [
+    {
+      "subfolder": "kids-wooden-playing-blocks",
+      "old_url": "https://www.facebook.com/marketplace/item/1332595162113434/",
+      "old_price": 15,
+      "new_price": null,
+      "floor": 8,
+      "age_days": 1,
+      "refresh_count_before": 0,
+      "status": "deleted",
+      "delete_detection": "redirect",
+      "delete_detection_evidence": {
+        "old_pathname": "/marketplace/item/1332595162113434/",
+        "redirected_to": "https://www.facebook.com/marketplace/melbourne/?unavailable_product=1",
+        "has_unavailable_copy": true,
+        "redirect_query_param": "unavailable_product=1"
+      },
+      "new_url": null,
+      "failure_reason": null
+    }
+  ]
+}

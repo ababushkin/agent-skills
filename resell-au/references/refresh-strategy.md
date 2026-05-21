@@ -10,8 +10,8 @@ sub-task in the parent design (ABA-152) appends its phase here:
 
 | Phase | What it does | Status |
 |---|---|---|
-| R0 | Discovery & classification (read-only) | Sub-task #1 — **this file's current scope** |
-| R1 | Delete existing listing on FB | Sub-task #2 |
+| R0 | Discovery & classification (read-only) | Sub-task #1 ✓ |
+| R1 | Delete existing listing on FB | Sub-task #2 ✓ — orchestration in `browser-automation.md` § "Refresh Mode — Phase R1 delete loop"; locators in `facebook-marketplace.md` § "Delete listing locators (Refresh Mode Phase R1)" |
 | R2 | Recreate at new price | Sub-task #3 + #4 |
 | R3 | Summary | Sub-task #6 |
 
