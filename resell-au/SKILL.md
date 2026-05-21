@@ -384,7 +384,7 @@ delete-and-relists stale FB Marketplace listings to reset the FB
 algorithm's "honeymoon" visibility window — a ~30% message-rate lift
 in reseller-community data.
 
-The mode runs in four phases:
+The mode runs in four phases plus an orchestration loop:
 
 - **Phase R0 — Discovery & classification.** Read-only walk of the
   target folder. Classifies each subfolder's `listing.md` into
@@ -408,11 +408,20 @@ The mode runs in four phases:
   `scripts/refresh_listing_md_update.py` to update the `**URL:**` /
   `**Date:**` lines and append a `## Refresh history` bullet —
   `**Price:**` and `## Comps` stay byte-identical. Recreate failure
-  leaves `listing.md` alone so the resumable state for Sub-task #5 is
-  intact. New price is calculated by `scripts/refresh_pricing.py`
-  (Sub-task #4): `−10%` default, clamped to floor, with per-item and
-  bulk overrides resolved at the R0 floor gate. Detail in
-  `refresh-strategy.md` § "Phase R2 — recreate at new price".
+  leaves `listing.md` alone so the resumable state is intact. New
+  price is calculated by `scripts/refresh_pricing.py`: `−10%`
+  default, clamped to floor, with per-item and bulk overrides
+  resolved at the R0 floor gate. Detail in `refresh-strategy.md`
+  § "Phase R2 — recreate at new price".
+- **R1+R2 multi-item loop.** After the floor gate, the queued set
+  (up to 5 items per session) is run through a delete-then-recreate
+  loop driven by `scripts/refresh_runstate.py`. The loop enforces
+  the 5-per-session cap with 30–90 s random delays between items,
+  prints a defer notice naming any over-cap items, and is resumable
+  across restarts (the same `<folder>/.resell-au-refresh-<ts>.json`
+  file is mutated in place — a kill after `deleted` but before
+  `recreated` resumes from R2, not from R1). Detail in
+  `refresh-strategy.md` § "Phase R1+R2 multi-item loop".
 - **Phase R3 — Summary** *(added in Sub-task #6)*.
 
 For full Phase R0 detail — classification rules, parser contracts,
@@ -645,10 +654,13 @@ These apply in Folder Mode. They are hard rules — not suggestions.
   session cap + data-loss warning behaviour, `no-url` no-write-back
   rule, **floor gate** (per-item `same` / `$X` overrides, bulk `drop
   everything N%` / `keep all prices`, floor-as-invariant), Phase R2
-  recreate orchestration + `listing.md` updater contract, run-state
-  JSON shape + resume semantics, deterministic fixture pointers
-  (R0 + R2 + pricing). Read when `/resell-au refresh` triggers,
-  before walking the folder.
+  recreate orchestration + `listing.md` updater contract, **R1+R2
+  multi-item loop** (run-state init/plan/update via
+  `scripts/refresh_runstate.py`, defer notice, 30–90 s inter-item
+  delays, resume-from-`deleted` contract), run-state JSON shape +
+  resume semantics, deterministic fixture pointers (R0 + R2 + pricing
+  + runstate). Read when `/resell-au refresh` triggers, before
+  walking the folder.
 
 ---
 

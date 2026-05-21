@@ -12,7 +12,8 @@ sub-task in the parent design (ABA-152) appends its phase here:
 |---|---|---|
 | R0 | Discovery & classification (read-only) | Sub-task #1 ✓ + floor gate from Sub-task #4 ✓ |
 | R1 | Delete existing listing on FB | Sub-task #2 ✓ — orchestration in `browser-automation.md` § "Refresh Mode — Phase R1 delete loop"; locators in `facebook-marketplace.md` § "Delete listing locators (Refresh Mode Phase R1)" |
-| R2 | Recreate at new price | Sub-task #3 ✓ (constant price, one item) + Sub-task #4 ✓ wires the price-drop calculator in. Multi-item handling layers in via Sub-task #5. Orchestration in § "Phase R2 — recreate at new price" below; listing.md updater at `scripts/refresh_listing_md_update.py`; calculator at `scripts/refresh_pricing.py`. |
+| R2 | Recreate at new price | Sub-task #3 ✓ (constant price, one item) + Sub-task #4 ✓ wires the price-drop calculator in. Orchestration in § "Phase R2 — recreate at new price" below; listing.md updater at `scripts/refresh_listing_md_update.py`; calculator at `scripts/refresh_pricing.py`. |
+| R1+R2 multi-item loop | Session cap enforcement, inter-item delays, resume on restart | Sub-task #5 ✓ — orchestration in § "Phase R1+R2 multi-item loop"; run-state helper at `scripts/refresh_runstate.py`. |
 | R3 | Summary | Sub-task #6 |
 
 When a later sub-task fires, append its phase to this file rather than
@@ -397,12 +398,157 @@ new_url: <captured URL>
 `delete_detection` was already populated by R1 and is carried
 forward unchanged.
 
+## Phase R1+R2 multi-item loop
+
+After R0 produces the queued set (up to 5 items, oldest-first) and
+the operator confirms the floor gate, the skill runs R1 then R2 for
+each queued item in order, with **30–90 s human-cadence delays**
+between items. The loop is driven off the Refresh Mode run-state
+JSON file, which is **the single source of truth** for what each
+item's next action is — both for the in-session loop and for
+resuming after a crash, `/compact`, or the user killing the session.
+
+The orchestration script is `scripts/refresh_runstate.py`. It has
+three subcommands; the agent's loop is built on `init` (start or
+resume), `plan` (what's next), `update` (record the result).
+
+### Step M0 — init or resume the run-state file
+
+After the floor gate, build a queued items array and pass it to
+`init`. The script's behaviour is the resume contract:
+
+```bash
+# JSON file with one object per queued item — see schema below.
+python3 <skill_dir>/scripts/refresh_runstate.py init <target_folder> \
+    --queued-json /tmp/queued.json
+```
+
+| Folder state | What init does |
+|---|---|
+| No `.resell-au-refresh-*.json` in folder | Create a new file `<folder>/.resell-au-refresh-<YYYYMMDD-HHMM>.json` seeded from `--queued-json`. Print its path. |
+| Latest file has any item in `pending`, `deleted`, or `failed` | **Resume** — print the existing file's path, ignore `--queued-json`. This is the load-bearing rule for the "kill mid-flight + restart" path. |
+| Latest file has all items in `recreated` / `skipped` | Treat as new run — create a new file from `--queued-json`. (The drained-queue-then-add-more case.) |
+| Latest file unreadable (JSON corrupted) | Exit non-zero. Do not silently overwrite — the operator may want to recover it. |
+
+**The same run-state file is updated in place across resumes.** A
+restart never produces a new timestamped file — `init` returns the
+existing path, the loop continues mutating it.
+
+The queued-item JSON shape (the agent assembles this from R0's
+classified set + the floor-gate-resolved prices, then feeds it to
+init):
+
+```json
+[
+  {
+    "subfolder": "kettlebell",
+    "title": "12kg Kettlebell — like new",
+    "old_url": "https://www.facebook.com/marketplace/item/111/",
+    "old_price": 45,
+    "new_price": 40,
+    "floor": 35,
+    "age_days": 12,
+    "refresh_count_before": 0
+  }
+]
+```
+
+`refresh_count_before` is optional (defaults to 0); the agent can
+derive it from existing `## Refresh history` bullets if needed but
+the script does not require it.
+
+### Step M1 — defer-notice before R1 starts
+
+Before the first R1 begins, print the defer notice **exactly once**
+per session, naming the deferred items so the operator knows what
+will be left over. R0 already shows the deferred set in the
+candidate table; this is the "confirming what I'm about to do"
+message at the start of execution:
+
+```
+Processing 5 items this session. Deferred to next session
+(≥30 min from now): eligible-8d, eligible-9d.
+Re-run `/resell-au refresh <folder>` after the cooldown to drain them.
+```
+
+If zero items are deferred, skip the message entirely — no value
+in noise.
+
+### Step M2 — loop on `plan` until no `r1`/`r2` actions remain
+
+Each iteration calls `plan`, which emits one JSON object per item
+(newline-delimited) with a `status` and a derived `action`:
+
+```bash
+python3 <skill_dir>/scripts/refresh_runstate.py plan <runstate_path>
+```
+
+| `status` in run-state | `action` from plan | Loop branches to |
+|---|---|---|
+| `pending` | `r1` | R1 delete loop in `browser-automation.md` → on success, `update --status deleted`; on confirmed deletion failure, `update --status failed` |
+| `deleted` | `r2` | R2 recreate (§ "Phase R2 — recreate at new price" above) — **do NOT re-run R1**, the old listing is already gone (would 404) |
+| `recreated` | `done` | Skip — item already finished in this run-state |
+| `skipped` | `done` | Skip — operator-decided terminal |
+| `failed` | `manual` | Surface the item + `failure_reason` to the operator; do not auto-retry. Operator can edit the run-state file by hand or re-run R0 once the underlying issue is fixed. |
+
+Take the first item whose action is `r1` or `r2`, run that phase,
+update the run-state, then sleep 30–90 s (random) using
+`run_in_background: true` on a Bash `sleep` — same pattern as Phase
+4 Step 7 / R1.8. After the sleep, re-run `plan` and continue.
+The loop terminates when no items have action `r1` or `r2` left.
+
+The per-item delay applies between **items**, not between R1 and R2
+of the same item — R1 hands directly to R2 once deletion is
+confirmed, with no inter-phase delay (per the Phase R2 pre-condition
+that the delete confirmation be recent and unambiguous).
+
+### Step M3 — update after each phase
+
+After a phase resolves, write the result back:
+
+```bash
+# Successful deletion.
+python3 <skill_dir>/scripts/refresh_runstate.py update <runstate_path> \
+    --item 0 --status deleted --delete-detection redirect
+
+# Successful recreate.
+python3 <skill_dir>/scripts/refresh_runstate.py update <runstate_path> \
+    --item 0 --status recreated --new-url "https://www.facebook.com/marketplace/item/222/"
+
+# Confirmed failure (e.g. deletion timeout, operator picked "continue" to skip).
+python3 <skill_dir>/scripts/refresh_runstate.py update <runstate_path> \
+    --item 0 --status failed --failure-reason "delete timeout — operator skipped"
+```
+
+`update` is atomic (temp + rename) so a kill mid-write can't
+corrupt the file. The corresponding `*_at` field
+(`pending_at` / `deleted_at` / `recreated_at` / `failed_at`) is
+auto-stamped on every status change — the timestamps let the
+operator (and the acceptance-criteria check) verify the 30–90 s
+inter-item gap from the file alone, no shell history needed.
+
+### Resume in practice
+
+The headline ABA-157 acceptance criterion is: kill the run after
+item 0 is `deleted` but before `recreated`, re-invoke
+`/resell-au refresh <folder>`. The skill then:
+
+1. Calls `init <folder>` (no `--queued-json` needed) — picks up
+   the existing `.resell-au-refresh-…json`.
+2. Calls `plan` — item 0 has `action: r2` (resume from recreate;
+   the old listing is already gone), items 1+ have `action: r1`.
+3. Runs R2 for item 0 first (no R1 re-run, no 404 risk), then
+   R1+R2 for the rest, with 30–90 s gaps between items.
+4. The same run-state file ends up with every item at `recreated`
+   — **never a new file per resume**.
+
 ## Refresh Mode run-state file
 
 Written to `<target_folder>/.resell-au-refresh-<YYYYMMDD-HHMM>.json`
-when R2 picks up its item. Refresh runs use a separate file from
-Folder Mode runs because the per-item shape differs (no comp block,
-no platforms map — refresh is single-platform, single-action).
+by `scripts/refresh_runstate.py init` at the start of the R1+R2
+loop. Refresh runs use a separate file from Folder Mode runs because
+the per-item shape differs (no comp block, no platforms map —
+refresh is single-platform, single-action).
 
 ```json
 {
@@ -415,32 +561,38 @@ no platforms map — refresh is single-platform, single-action).
       "title": "12kg Kettlebell — like new",
       "old_url": "https://www.facebook.com/marketplace/item/111/",
       "old_price": 45,
-      "new_price": 45,
+      "new_price": 40,
       "floor": 35,
       "age_days": 12,
       "refresh_count_before": 0,
       "status": "pending | deleted | recreated | failed | skipped",
       "delete_detection": "redirect | listing_gone_copy | row_missing | timeout_manual | null",
       "new_url": "https://www.facebook.com/marketplace/item/222/ | null",
-      "failure_reason": "string | null"
+      "failure_reason": "string | null",
+      "pending_at": "ISO 8601 | null",
+      "deleted_at": "ISO 8601 | null",
+      "recreated_at": "ISO 8601 | null",
+      "failed_at": "ISO 8601 | null"
     }
   ]
 }
 ```
 
-Resume semantics (mirrors Folder Mode):
+Resume semantics:
 
 | Terminal state | Meaning |
 |---|---|
-| `pending` | Not started — R1 has not yet deleted. Start from R1. |
+| `pending` | Not started — R1 has not yet deleted. Resume from R1. |
 | `deleted` | R1 succeeded but R2 did not capture a new URL. Resume from R2 — the OLD listing is already gone. Do not re-run R1 (would 404). |
 | `recreated` | R2 succeeded, `listing.md` updated. Item is done. |
-| `failed` / `skipped` | Operator-decided terminal states. Do not auto-retry; the operator chooses. |
+| `skipped` | Operator-decided skip (e.g. unrecoverable mismatch). Do not retry. |
+| `failed` | Phase failed and operator has not yet decided next step. Re-running `init` will resume the file; `plan` surfaces these as `action: manual` so the operator chooses (edit run-state by hand, or fix the underlying issue and re-run). |
 
-The `deleted` row is the resumable state Sub-task #5 picks up. The
-single-item slice never exercises multi-item resume, but the field
-shape is fixed here so the resume logic has a stable contract to
-build on.
+The `*_at` fields are auto-stamped by
+`scripts/refresh_runstate.py update` so the inter-item delay
+verification works off the file alone (the ABA-157 acceptance
+criterion explicitly asks for "each item-to-item gap is between
+30 and 90 seconds, verify from run-state timestamps").
 
 ## Test fixture (Phase R2 updater)
 
@@ -483,3 +635,27 @@ since R0 now imports the calculator):
 ```bash
 bash <skill_dir>/tests/check_refresh_pricing.sh
 ```
+
+## Test suite (run-state helper)
+
+`scripts/refresh_runstate.py` is covered by `tests/test_refresh_runstate.py`
+— pure unit tests, since the script returns JSON, not text suitable
+for a golden-file diff. Cases:
+
+| Class | What it pins |
+|---|---|
+| `BuildPlanResumeClassification` | Each `status → action` mapping from the resume table: `pending → r1`, `deleted → r2` (the headline ABA-157 resume case), `recreated`/`skipped → done`, `failed → manual`. Plus item-index preservation. |
+| `ApplyUpdateStatusTransitions` | Status updates auto-stamp the matching `*_at` field (`pending_at`, `deleted_at`, `recreated_at`, `failed_at`) so the inter-item-delay check works off the file alone. Unknown status / out-of-range item raise. |
+| `FindLatestAndUnfinished` | `find_latest_runstate` picks the lex-greatest filename. `has_unfinished_work` returns True for any `pending` / `deleted` / `failed` item; False for all-terminal (`recreated` / `skipped`). |
+| `RunstateFilenameFormat` | The `YYYYMMDD-HHMM` filename pattern is the resume contract — zero-pad behaviour pinned explicitly. |
+| `CmdInitIntegration` | End-to-end CLI behaviour: fresh init creates a new file from `--queued-json`; resume returns the same file and ignores `--queued-json`; all-terminal file + no `--queued-json` errors; all-terminal file + new queued list creates a new file; missing required field in queued JSON rejected. |
+
+Run after any change to `refresh_runstate.py`:
+
+```bash
+bash <skill_dir>/tests/check_refresh_runstate.sh
+```
+
+`REFRESH_RUNSTATE_NOW=2026-05-21T14:00:00` is set inside each test
+that needs deterministic timestamps; the same env var works for
+shell-debug runs.

@@ -171,6 +171,15 @@ Locator patterns are in `facebook-marketplace.md` § "Delete listing
 locators (Refresh Mode Phase R1)". This section is the orchestration
 sequence — read both before running.
 
+R1 is one step in the **multi-item R1+R2 loop** orchestrated by
+`scripts/refresh_runstate.py`. The loop decides which item runs
+next (and whether the next action for that item is R1 or R2 —
+resume can start from R2 when R1 has already deleted the listing
+in a prior session). Read `refresh-strategy.md` § "Phase R1+R2
+multi-item loop" for the loop structure, the defer notice that
+precedes the first R1, and the resume contract; this section
+documents the per-item R1 mechanics.
+
 ### Pre-conditions
 
 - Phase R0 has classified the target as `refresh-eligible` and the
@@ -308,9 +317,16 @@ Same protocol as Phase 4 Step 7 — **30–90 s random pause** before
 moving to the next item's R1 sequence. Use Bash `run_in_background:
 true` on `sleep N`; do not skip.
 
+The delay runs at the **multi-item loop level**, not after every
+phase. R1 hands directly to R2 for the same item (no inter-phase
+sleep — see `refresh-strategy.md` § "Step M2"), then the sleep
+fires before the loop picks up the next item's R1.
+
 The session cap of 5 deletes per session (Refresh Mode hygiene rule)
 caps the burst risk even with the inter-item delay. Over-cap items
-defer to a future session ≥30 min later.
+defer to a future session ≥30 min later; the defer notice listing
+them by name prints once at the start of the loop (see
+`refresh-strategy.md` § "Step M1").
 
 ---
 
