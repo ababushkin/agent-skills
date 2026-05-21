@@ -403,14 +403,16 @@ The mode runs in four phases:
   listing locators (Refresh Mode Phase R1)".
 - **Phase R2 — Recreate at new price.** Pre-fill the Phase 4 form
   payload from the item's `listing.md` (Ad copy block + on-disk
-  photos), run Folder Mode Phase 4 Steps 1–6 verbatim, then on URL
-  capture run `scripts/refresh_listing_md_update.py` to update the
-  `**URL:**` / `**Date:**` lines and append a `## Refresh history`
-  bullet — `**Price:**` and `## Comps` stay byte-identical. Recreate
-  failure leaves `listing.md` alone so the resumable state for
-  Sub-task #5 is intact. Sub-task #3 ships **one item, constant
-  price**; the −10% clamp-to-floor calculator arrives in Sub-task #4.
-  Detail in `refresh-strategy.md` § "Phase R2 — recreate at new price".
+  photos), substitute the floor-gate-resolved price, run Folder Mode
+  Phase 4 Steps 1–6 verbatim, then on URL capture run
+  `scripts/refresh_listing_md_update.py` to update the `**URL:**` /
+  `**Date:**` lines and append a `## Refresh history` bullet —
+  `**Price:**` and `## Comps` stay byte-identical. Recreate failure
+  leaves `listing.md` alone so the resumable state for Sub-task #5 is
+  intact. New price is calculated by `scripts/refresh_pricing.py`
+  (Sub-task #4): `−10%` default, clamped to floor, with per-item and
+  bulk overrides resolved at the R0 floor gate. Detail in
+  `refresh-strategy.md` § "Phase R2 — recreate at new price".
 - **Phase R3 — Summary** *(added in Sub-task #6)*.
 
 For full Phase R0 detail — classification rules, parser contracts,
@@ -449,20 +451,32 @@ Refresh Mode triggers, before walking any folder.
    `listing.md`. If the user wants the URL persisted, they need to
    add the `**URL:**` line manually.
 
-5. **Confirm with the user** that the queued set looks right before
+5. **Live-price override.** The `**Price:**` field in `listing.md`
+   is a snapshot from initial publish — not authoritative for the
+   current live FB price (the user manually drops prices post-publish
+   without syncing back). Ask once before the floor gate:
+   *"Any item where the current live FB price differs from the
+   listing.md snapshot? Paste `<item>: $X` per line, or reply `none`."*
+   Keep overrides **in-memory for this session only** — never write
+   back to `listing.md`. The floor gate computes the proposed new
+   price against the live value, not the snapshot.
+
+6. **Floor gate.** For every `refresh-eligible` item, the default
+   new price is `−10% clamp-to-floor` from `scripts/refresh_pricing.py`
+   (already shown in the candidate table). Offer overrides once:
+   *"Floor gate — accept defaults, or override per item (`<item>: same`,
+   `<item>: $X`) and/or in bulk (`drop everything N%`, `keep all
+   prices`). The floor is non-negotiable in all cases."* Bulk applies
+   first, per-item overrides apply on top, then the floor clamp is
+   the last step. Re-print the queued set with the resolved prices
+   so the operator can confirm before R1 begins. Full syntax and
+   resolution order in `refresh-strategy.md` § "Floor gate".
+
+7. **Confirm with the user** that the queued set looks right before
    handing off to Phase R1.
    * `deferred` rows are visible but not acted on this session.
    * User can edit the list inline (e.g. "skip the bike, push the
      kettlebell ahead of the rugs") before continuing.
-   * **Live-price override.** The `**Price:**` field in `listing.md`
-     is a snapshot from initial publish — not authoritative for the
-     current live FB price (the user manually drops prices post-publish
-     without syncing back). Ask once before locking in the set:
-     *"Any item where the current live FB price differs from the
-     listing.md snapshot? Paste `<item>: $X` per line, or reply `none`."*
-     Keep overrides **in-memory for this session only** — never
-     write back to `listing.md`. Phase R2 uses the override as both
-     the old and new recreate price (constant-price slice).
 
 After confirmation, Phase R1 deletes each item in the queued set
 (see `references/browser-automation.md` § "Refresh Mode — Phase R1
@@ -629,9 +643,11 @@ These apply in Folder Mode. They are hard rules — not suggestions.
 - `references/refresh-strategy.md` — Refresh Mode reference: why
   delete-and-relist, Phase R0 classification rules + parser contracts,
   session cap + data-loss warning behaviour, `no-url` no-write-back
-  rule, Phase R2 recreate orchestration + `listing.md` updater
-  contract, run-state JSON shape + resume semantics, deterministic
-  fixture pointers (R0 + R2). Read when `/resell-au refresh` triggers,
+  rule, **floor gate** (per-item `same` / `$X` overrides, bulk `drop
+  everything N%` / `keep all prices`, floor-as-invariant), Phase R2
+  recreate orchestration + `listing.md` updater contract, run-state
+  JSON shape + resume semantics, deterministic fixture pointers
+  (R0 + R2 + pricing). Read when `/resell-au refresh` triggers,
   before walking the folder.
 
 ---

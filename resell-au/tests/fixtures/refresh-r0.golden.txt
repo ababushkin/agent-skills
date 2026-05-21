@@ -15,7 +15,7 @@ Found 10 items: 5 queued, 1 deferred, 1 no-url, 1 too-fresh, 2 silently skipped 
 | eligible-10d | 10d | $30 | $27 | $25 | refresh |
 | no-url-15d | 15d | $60 | $55 | $45 | no URL — paste required |
 | too-fresh-3d | 3d | $40 | — | — | too-fresh, skip |
-| eligible-8d | 8d | $25 | $22 | $20 | deferred to next session |
+| eligible-8d | 8d | $25 | $23 | $20 | deferred to next session |
 
 ### Deferred to next session (1 item)
 Rate-limit hygiene caps refresh at 5 per session.

@@ -27,6 +27,11 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
+# Shared price-drop math (Sub-task #4 promoted these out of R0 so the
+# floor gate and Phase R2 use the same numbers as the R0 preview).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from refresh_pricing import proposed_price  # noqa: E402
+
 STALENESS_DAYS = 7
 SESSION_CAP = 5
 
@@ -38,28 +43,6 @@ RE_DATE = re.compile(r"^\*\*Date:\*\*\s+(\d{4}-\d{2}-\d{2})", re.MULTILINE)
 RE_URL = re.compile(r"^\*\*URL:\*\*\s+(\S+)", re.MULTILINE)
 RE_PRICE = re.compile(r"^\*\*Price:\*\*\s+\$(\d+)", re.MULTILINE)
 RE_FLOOR = re.compile(r"Floor:\s*\$(\d+)")
-
-
-def round_price(p: int) -> int:
-    """Seller-rounding rules from the Pricing model in SKILL.md."""
-    if p < 30:
-        return p
-    if p < 200:
-        return round(p / 5) * 5
-    if p < 1000:
-        return round(p / 10) * 10
-    return round(p / 25) * 25
-
-
-def proposed_price(current: int, floor: int | None) -> int:
-    """−10% clamp-to-floor preview. Sub-task #3 will add override
-    handling on top of this default."""
-    raw = int(current * 0.9)
-    rounded = round_price(raw)
-    if floor is None:
-        # Absent floor falls back to list_price × 0.85 per Pricing § 5.
-        floor = round_price(int(current * 0.85))
-    return max(floor, rounded)
 
 
 def parse_listing(subfolder: Path) -> dict | None:
