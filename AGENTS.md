@@ -6,6 +6,10 @@ Instructions for any coding agent (Claude Code, Codex, etc.) working in this rep
 
 A personal utility skill pack. Skills live at `<name>/SKILL.md` (flat layout).
 
+## Local dev
+
+Python version is pinned via `.mise.toml`. With [`mise`](https://mise.jdx.dev) installed, run `mise trust` then `mise install` in the repo root to provision it; `python3` then resolves to the pinned version. The resell-au scripts and their goldens were verified against this version.
+
 ## Linear workflow
 
 Linear is authoritative for status. Local task lists are fine for within-session bookkeeping; they don't replace a Linear issue.
