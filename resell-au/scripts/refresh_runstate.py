@@ -70,6 +70,10 @@ RUNSTATE_PREFIX = ".resell-au-refresh-"
 RUNSTATE_SUFFIX = ".json"
 RUNSTATE_GLOB = f"{RUNSTATE_PREFIX}*{RUNSTATE_SUFFIX}"
 
+# Rate-limit hygiene: FB Marketplace allows ~5 reposts/session without
+# triggering shadowban flags. This mirrors SESSION_CAP in refresh_r0_classify.py.
+SESSION_CAP = 5
+
 TERMINAL_STATES = {"recreated", "skipped"}
 RESUMABLE_STATES = {"pending", "deleted", "failed"}
 ALL_STATES = TERMINAL_STATES | RESUMABLE_STATES
@@ -216,6 +220,15 @@ def cmd_init(args: argparse.Namespace) -> int:
         _validate_queued(queued)
     except ValueError as e:
         print(f"invalid queued items: {e}", file=sys.stderr)
+        return 2
+    if len(queued) > SESSION_CAP:
+        print(
+            f"--queued-json contains {len(queued)} items, "
+            f"which exceeds session_cap ({SESSION_CAP}). "
+            f"Trim to {SESSION_CAP} before running the loop "
+            f"(rate-limit hygiene — see refresh-strategy.md).",
+            file=sys.stderr,
+        )
         return 2
 
     when = now_from_env()

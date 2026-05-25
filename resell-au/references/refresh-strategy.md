@@ -577,9 +577,13 @@ inter-item-delay verification (each item-to-item gap between
 
 `session_cap` is written into the run-state at `init` for
 observability (it tells anyone inspecting the file "this run was
-capped at 5"). The actual cap is enforced upstream in
-`refresh_r0_classify.py` — the loop itself does not re-read this
-field. `refresh_count_before` is similarly informational; the
+capped at 5"). The cap is enforced in two places: upstream in
+`refresh_r0_classify.py` (trims eligible items to `SESSION_CAP`
+before writing `--queued-json`), and defensively in
+`refresh_runstate.py init` (refuses `--queued-json` arrays longer
+than `SESSION_CAP` with a non-zero exit). The double enforcement
+guards against an R0 regression silently passing too many items to
+the loop. `refresh_count_before` is similarly informational; the
 listing.md updater derives the canonical refresh number from
 existing `## Refresh history` bullets in the file rather than
 trusting this field.

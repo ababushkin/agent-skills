@@ -28,6 +28,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from refresh_runstate import (  # noqa: E402
+    SESSION_CAP,
     apply_update,
     build_plan,
     cmd_init,
@@ -342,6 +343,40 @@ class CmdInitIntegration(unittest.TestCase):
         rc, path = self._run_init(bad_path)
         self.assertEqual(rc, 2)
         self.assertIsNone(path)
+
+    def test_queued_exceeding_session_cap_rejected(self):
+        # Belt-and-braces: even if R0 somehow passes too many items, init
+        # refuses to create a run-state file that would violate the cap.
+        over_cap = [
+            {
+                "subfolder": f"item{i}", "title": f"Item {i}",
+                "old_url": f"https://www.facebook.com/marketplace/item/{i}/",
+                "old_price": 50, "new_price": 45, "floor": 35, "age_days": 10,
+            }
+            for i in range(SESSION_CAP + 1)
+        ]
+        over_path = self.tmp / "over-cap.json"
+        over_path.write_text(json.dumps(over_cap), encoding="utf-8")
+        rc, path = self._run_init(over_path)
+        self.assertEqual(rc, 2)
+        self.assertIsNone(path)
+
+    def test_queued_at_exactly_session_cap_accepted(self):
+        at_cap = [
+            {
+                "subfolder": f"item{i}", "title": f"Item {i}",
+                "old_url": f"https://www.facebook.com/marketplace/item/{i}/",
+                "old_price": 50, "new_price": 45, "floor": 35, "age_days": 10,
+            }
+            for i in range(SESSION_CAP)
+        ]
+        at_cap_path = self.tmp / "at-cap.json"
+        at_cap_path.write_text(json.dumps(at_cap), encoding="utf-8")
+        rc, path = self._run_init(at_cap_path)
+        self.assertEqual(rc, 0)
+        assert path is not None
+        state = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(len(state["items"]), SESSION_CAP)
 
 
 if __name__ == "__main__":
