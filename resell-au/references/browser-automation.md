@@ -109,22 +109,16 @@ on the post-publish redirect. Instead, poll the URL via `evaluate_script`.
    `/marketplace/you/selling` or `/marketplace/your_listings` (FB A/B tests
    this destination):
    - Record `{ status: "posted", post_publish_detection:
-     "your_listings_redirect", listing_url: null }` in the run-state.
-   - Take a screenshot.
-   - Tell the user: *"Posted `<item>` — FB redirected to your-listings page;
-     the listing URL was not captured. Paste it here if you want it stored
-     in `listing.md`."*
-   - Break the poll.
+     "your_listings_redirect", listing_url: null }` in the run-state
+     (provisional).
+   - Break the poll and go to **Step 6b** to attempt automatic URL recovery
+     before involving the operator.
 
 4. **Timeout — 15 s elapsed without a match.**
-   - `take_screenshot`.
    - Record `{ status: "posted", post_publish_detection: "timeout_manual",
      listing_url: null }` in the run-state (provisional — user will confirm).
-   - Surface to user: *"Publish click sent, but I couldn't confirm the
-     listing went live within 15 s. Screenshot attached. Was it published?
-     If yes, paste the listing URL."*
-   - Wait for the user's reply before continuing to Step 7. Do not retry-click
-     Publish.
+   - Go to **Step 6b** to attempt automatic URL recovery before involving the
+     operator. Do not retry-click Publish.
 
 5. If at any point during the poll the page shows an error banner, a captcha,
    or a "posting too fast" warning: **stop immediately**. Screenshot + surface
@@ -134,6 +128,79 @@ on the post-publish redirect. Instead, poll the URL via `evaluate_script`.
 page. The post-publish state is a URL change, not a text change — there is no
 reliable text token to wait for. A 500 ms `evaluate_script` poll is the
 correct shape, and 30 calls over 15 s is trivial load on CDP.
+
+### Step 6b — Recover URL from Selling-page iframe
+
+Reached only from Step 6 Path B (`your_listings_redirect`) or the 15 s
+timeout (`timeout_manual`) — the listing went live but the poll never saw a
+`/marketplace/item/<id>/` URL. The real URL can usually still be recovered
+from the ad-preview iframe FB renders on the filtered Selling page, so try
+that before bothering the operator. (On Path A, Step 6 has already captured
+the URL and broken the poll — Step 6b never runs.)
+
+1. **Navigate** the tab to the title-filtered Selling page:
+   `https://www.facebook.com/marketplace/you/selling?title_search=<URL-encoded title>`,
+   where `<title>` is the title just published (the Phase 3 approved
+   `**Title:**`).
+
+2. **Poll for the iframe** for up to ~5 s (`evaluate_script` every 500 ms),
+   waiting for `iframe[src*="ads/ad_preview_generator_iframe"]` to appear on
+   the parent DOM. No `take_snapshot` is needed — the iframe `src` is on the
+   parent page and readable via `evaluate_script` alone.
+
+3. **Extract** the URL and name with this `evaluate_script` body:
+
+   ```js
+   () => {
+     const f = document.querySelector('iframe[src*="ads/ad_preview_generator_iframe"]');
+     if (!f || !f.src) return null;
+     const m = f.src.match(/[?&]creative_spec=([^&]+)/);
+     if (!m) return null;
+     try {
+       const spec = JSON.parse(decodeURIComponent(m[1]));
+       const ld = spec.object_story_spec.link_data;
+       if (!ld || typeof ld.link !== 'string' || typeof ld.name !== 'string') return null;
+       return { url: ld.link, name: ld.name };
+     } catch (e) {
+       return null;
+     }
+   }
+   ```
+
+   `link_data.link` is the real `/marketplace/item/<id>/` URL; `link_data.name`
+   is the listing title, used below to confirm identity.
+
+4. **Identity check.** Compare the returned `name` against the title just
+   published — an exact match after trimming surrounding whitespace on both
+   sides. Do not loosen beyond a trim; substring or fuzzy matching reopens the
+   wrong-attribution risk. **Match** →
+   - Record `{ status: "posted", post_publish_detection: "iframe_extract",
+     listing_url: "<url>" }` in the run-state, overwriting the provisional
+     `your_listings_redirect` / `timeout_manual` key.
+   - Write the URL to `listing.md` under `**URL:**` (Step 7).
+   - Tell the user: *"Posted `<item>` — recovered URL from Selling page:
+     `<URL>`."*
+   - Done. Skip the paste fallback below.
+
+5. **Mismatch or extraction failure** — the extractor returns `null`, the
+   `name` doesn't match the published title exactly, or the iframe never
+   appeared within ~5 s. Fall through to the operator-paste fallback, keeping
+   the provisional key already recorded (`your_listings_redirect` or
+   `timeout_manual` — do not change it):
+   - `take_screenshot`.
+   - For `your_listings_redirect`: *"Posted `<item>` — FB redirected to the
+     your-listings page and I couldn't auto-recover the URL. Paste it here if
+     you want it stored in `listing.md`."*
+   - For `timeout_manual`: *"Publish click sent, but I couldn't confirm the
+     listing went live within 15 s and couldn't auto-recover the URL.
+     Screenshot attached. Was it published? If yes, paste the listing URL."*
+   - Wait for the operator's reply before continuing to Step 7. Do not
+     retry-click Publish.
+
+**Why the `name` check matters:** with two listings published in quick
+succession, the filtered Selling page may surface the wrong row's iframe
+first. The exact-title match is what stops a recovered URL being attributed
+to the wrong item — on any doubt, fall through to paste rather than guess.
 
 ### Step 7 — Human-cadence delay
 
@@ -382,7 +449,7 @@ Schema:
       "platforms": {
         "facebook_marketplace": "posted | skipped | failed | pending"
       },
-      "post_publish_detection": "url_match | your_listings_redirect | timeout_manual | null",
+      "post_publish_detection": "url_match | iframe_extract | your_listings_redirect | timeout_manual | null",
       "listing_url": "https://www.facebook.com/marketplace/item/<id>/ | null"
     }
   ]

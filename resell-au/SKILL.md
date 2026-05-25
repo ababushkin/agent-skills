@@ -231,18 +231,24 @@ cases such as manual `listing.md` edits or an interrupted prior run.
    fix it first, re-snapshot to confirm, then click Publish.
 6. **Confirm success — poll `window.location.href`, don't `wait_for`.** After
    clicking Publish, poll the URL via `evaluate_script` every 500 ms for up to
-   15 s. Three outcomes:
+   15 s:
    - URL matches `/marketplace/item/\d+/?` → capture URL, record
      `post_publish_detection: "url_match"` + `listing_url`, write URL to
      `listing.md` (Step 7), tell the user `"Posted <item> — <URL>."`
-   - URL matches `/marketplace/you/selling` or `/marketplace/your_listings` →
-     record `"your_listings_redirect"` + `listing_url: null`, screenshot, ask
-     the user to paste the URL if they want it captured.
-   - 15 s timeout → screenshot, record `"timeout_manual"`, ask the user to
-     confirm publication and paste the URL. Do not retry-click Publish.
+   - URL matches `/marketplace/you/selling` or `/marketplace/your_listings`, or
+     15 s elapses with no match → record `"your_listings_redirect"` /
+     `"timeout_manual"` (provisional) + `listing_url: null`, then run **Step
+     6b**: navigate to the title-filtered Selling page and extract the real URL
+     from the ad-preview iframe's `creative_spec`. If the iframe's listing title
+     matches the published title exactly → record `"iframe_extract"` +
+     `listing_url` and write to `listing.md`. On mismatch / extraction failure →
+     screenshot and ask the operator to paste the URL (keeping the provisional
+     key). Do not retry-click Publish.
 
-   Full protocol (regex, timing, stop-the-line conditions) lives in
-   `references/browser-automation.md` Step 6.
+   `post_publish_detection` is one of `url_match`, `iframe_extract`,
+   `your_listings_redirect`, `timeout_manual`. Full protocol (regex, timing,
+   the Step 6b extractor, stop-the-line conditions) lives in
+   `references/browser-automation.md` Steps 6 / 6b.
 7. **Write listing record.** Immediately after confirming the listing is live,
    write `<item_subfolder>/listing.md`. If the file already exists (item was
    previously listed on another platform), update the Platform line and append
@@ -314,10 +320,11 @@ Rules for this file:
   prices. If no garage sale price was calculated, derive it: 45% of list
   price, rounded to nearest whole dollar under $30, nearest $5 above $30.
 - **`**URL:**` line** is populated from the post-publish poll (Phase 4 Step 6,
-  `url_match` outcome). If the poll returned `your_listings_redirect` or
-  `timeout_manual` and the user did not paste a URL, omit the line entirely
-  rather than writing a placeholder — a missing line is the signal that the
-  URL was not captured.
+  `url_match` outcome) or Step 6b iframe recovery (`iframe_extract` outcome).
+  If the poll returned `your_listings_redirect` or `timeout_manual` and neither
+  the iframe recovery nor the user pasted a URL, omit the line entirely rather
+  than writing a placeholder — a missing line is the signal that the URL was
+  not captured.
 - **`## Comps` section** is populated from the run-state `comps` block
   captured in Phase 2. Skipped or zero-result layers **keep the heading** and
   write `- skipped (<reason>)` or `- 0 results` — auditability requires the
@@ -374,7 +381,7 @@ Schema:
       "platforms": {
         "facebook_marketplace": "posted | skipped | failed | pending"
       },
-      "post_publish_detection": "url_match | your_listings_redirect | timeout_manual | null",
+      "post_publish_detection": "url_match | iframe_extract | your_listings_redirect | timeout_manual | null",
       "listing_url": "https://www.facebook.com/marketplace/item/<id>/ | null",
       "listing_md_path": "/path/to/item/listing.md"
     }

@@ -299,13 +299,17 @@ gives the same photo set. Cap 10 — same as Phase 4.
 ### Step R2.2 — drive the recreate (Phase 4 Steps 1–6)
 
 Run `browser-automation.md` § "The loop (one item, one platform)"
-Steps 1 through 6 verbatim. The outcome is one of:
+Steps 1 through 6 verbatim (including Step 6b). The outcome is one of:
 
-- `post_publish_detection: "url_match"` — new listing URL captured.
+- `post_publish_detection: "url_match"` — new listing URL captured
+  directly from the post-publish redirect.
+- `post_publish_detection: "iframe_extract"` — the publish landed on the
+  your-listings page or timed out, and Step 6b recovered the real URL from
+  the Selling-page ad-preview iframe (verified by exact title match).
 - `post_publish_detection: "your_listings_redirect"` or
-  `"timeout_manual"` — Publish click landed, but the URL wasn't
-  captured by the polling loop. Ask the operator to paste it, same
-  flow as Phase 4 Step 6.
+  `"timeout_manual"` — Publish click landed, but neither the polling loop
+  nor the Step 6b iframe recovery captured the URL. Ask the operator to
+  paste it, same flow as Phase 4 Step 6.
 
 If the recreate fails at any step (snapshot mismatch, captcha,
 publish timeout with no URL pasted by the operator):
@@ -321,8 +325,8 @@ publish timeout with no URL pasted by the operator):
 
 ### Step R2.3 — update listing.md
 
-When a new URL is available (either from `url_match` or operator
-paste), run the updater:
+When a new URL is available (from `url_match`, `iframe_extract`, or
+operator paste), run the updater:
 
 ```bash
 python3 <skill_dir>/scripts/refresh_listing_md_update.py \

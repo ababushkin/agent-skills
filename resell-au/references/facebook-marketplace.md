@@ -183,6 +183,53 @@ attempt during a real run; baked in here to avoid repeating them.
   Full protocol (success paths, redirect fallback, timeout handling) lives in
   `browser-automation.md` Step 6.
 
+### Listing-URL recovery via Selling-page iframe
+
+When the post-publish poll lands on the your-listings page or times out, the
+real `/marketplace/item/<id>/` URL is not in the address bar — but it is
+embedded in the ad-preview iframe FB renders at the bottom of the filtered
+Selling page (`/marketplace/you/selling?title_search=<URL-encoded title>`).
+The iframe's `src` carries a URL-encoded `creative_spec` JSON blob whose
+`object_story_spec.link_data.link` is the real listing URL and whose `.name`
+is the listing title.
+
+Note: the `target_id=...` param on the row's `Promote now` link looks like a
+listing ID but is FB's **ad-targeting** ID, not the marketplace listing ID —
+do not build a listing URL from it. The `creative_spec.link` below is the
+only reliable source on this page.
+
+Canonical extractor (the `browser-automation.md` Step 6b `evaluate_script`
+body):
+
+```js
+() => {
+  const f = document.querySelector('iframe[src*="ads/ad_preview_generator_iframe"]');
+  if (!f || !f.src) return null;
+  const m = f.src.match(/[?&]creative_spec=([^&]+)/);
+  if (!m) return null;
+  try {
+    const spec = JSON.parse(decodeURIComponent(m[1]));
+    const ld = spec.object_story_spec.link_data;
+    if (!ld || typeof ld.link !== 'string' || typeof ld.name !== 'string') return null;
+    return { url: ld.link, name: ld.name };
+  } catch (e) {
+    return null;
+  }
+}
+```
+
+**Identity verification is mandatory.** The returned `name` must match the
+title just published **exactly** (after trimming surrounding whitespace)
+before the URL is trusted — two listings published in quick succession can
+surface the wrong row's iframe first, and the name match is the only guard
+against attributing a URL to the wrong item. Don't loosen the match beyond a
+trim.
+
+**DOM brittleness.** This depends on FB keeping the ad-preview iframe and the
+`creative_spec` shape. If either changes, the extractor returns `null` and
+the existing operator-paste fallback (`your_listings_redirect` /
+`timeout_manual`) kicks in unchanged — no silent wrong URL.
+
 ## Delete listing locators (Refresh Mode Phase R1)
 
 FB Marketplace **does not expose a delete affordance on the public
