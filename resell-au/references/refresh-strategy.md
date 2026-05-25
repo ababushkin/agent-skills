@@ -499,14 +499,11 @@ python3 <skill_dir>/scripts/refresh_runstate.py update <runstate_path> \
 
 `update` is atomic (temp + rename) so a kill mid-write can't
 corrupt the file. The corresponding `*_at` field
-(`deleted_at` / `recreated_at` / `failed_at`) is auto-stamped on
-every status transition — `pending_at` exists in the schema but
-is not currently stamped by `init` (tracked separately as a
-follow-up). The recreated/failed timestamps let the operator
-verify the 30–90 s inter-item gap from the file alone, no shell
-history needed. Note that `skipped` status currently stamps
-`failed_at` (no separate `skipped_at`); the R3 summary
-disambiguates by reading `status`, not the timestamp.
+(`pending_at` / `deleted_at` / `recreated_at` / `skipped_at` /
+`failed_at`) is auto-stamped on every status transition —
+`pending_at` is stamped by `init` at creation time. The
+timestamps let the operator verify the 30–90 s inter-item gap
+from the file alone, no shell history needed.
 
 ### Resume in practice
 
@@ -552,6 +549,7 @@ refresh is single-platform, single-action).
       "pending_at": "ISO 8601 | null",
       "deleted_at": "ISO 8601 | null",
       "recreated_at": "ISO 8601 | null",
+      "skipped_at": "ISO 8601 | null",
       "failed_at": "ISO 8601 | null"
     }
   ]
@@ -568,12 +566,12 @@ Resume semantics:
 | `skipped` | Operator-decided skip (e.g. unrecoverable mismatch). Do not retry. |
 | `failed` | Phase failed and operator has not yet decided next step. Re-running `init` will resume the file; `plan` surfaces these as `action: manual` so the operator chooses (edit run-state by hand, or fix the underlying issue and re-run). |
 
-The `deleted_at` / `recreated_at` / `failed_at` fields are
-auto-stamped by `scripts/refresh_runstate.py update` so the
-inter-item-delay verification (each item-to-item gap between
-30 and 90 s) works off the file alone — no shell history needed.
-`pending_at` exists in the schema but is currently always `null`
-(`init` does not stamp it); see follow-up.
+The `pending_at` / `deleted_at` / `recreated_at` / `skipped_at` /
+`failed_at` fields are auto-stamped by
+`scripts/refresh_runstate.py` — `pending_at` at `init` time,
+the rest on each `update` call. The inter-item-delay
+verification (each item-to-item gap between 30 and 90 s) works
+off the file alone — no shell history needed.
 
 `session_cap` is written into the run-state at `init` for
 observability (it tells anyone inspecting the file "this run was

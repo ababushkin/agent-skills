@@ -149,7 +149,7 @@ def _validate_queued(queued: list[dict]) -> None:
             )
 
 
-def _seed_items(queued: list[dict]) -> list[dict]:
+def _seed_items(queued: list[dict], when: datetime) -> list[dict]:
     """Materialise the per-item shape for a fresh run-state."""
     out: list[dict] = []
     for q in queued:
@@ -166,9 +166,10 @@ def _seed_items(queued: list[dict]) -> list[dict]:
             "delete_detection": None,
             "new_url": None,
             "failure_reason": None,
-            "pending_at": None,
+            "pending_at": when.isoformat(timespec="seconds"),
             "deleted_at": None,
             "recreated_at": None,
+            "skipped_at": None,
             "failed_at": None,
         })
     return out
@@ -237,7 +238,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         "run_started": when.isoformat(timespec="seconds"),
         "target_folder": str(folder),
         "session_cap": 5,
-        "items": _seed_items(queued),
+        "items": _seed_items(queued, when),
     }
     write_state_atomic(new_path, state)
     print(str(new_path))
@@ -289,8 +290,8 @@ _STATUS_AT_FIELD = {
     "pending": "pending_at",
     "deleted": "deleted_at",
     "recreated": "recreated_at",
+    "skipped": "skipped_at",
     "failed": "failed_at",
-    "skipped": "failed_at",
 }
 
 

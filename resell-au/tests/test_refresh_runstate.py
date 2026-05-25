@@ -55,6 +55,7 @@ def _item(subfolder: str, status: str, **overrides) -> dict:
         "pending_at": None,
         "deleted_at": None,
         "recreated_at": None,
+        "skipped_at": None,
         "failed_at": None,
     }
     base.update(overrides)
@@ -157,6 +158,16 @@ class ApplyUpdateStatusTransitions(unittest.TestCase):
         self.assertEqual(item["status"], "failed")
         self.assertEqual(item["failure_reason"], "snapshot mismatch")
         self.assertEqual(item["failed_at"], "2026-05-21T14:30:00")
+
+    def test_skipped_stamps_skipped_at_not_failed_at(self):
+        state = _state([_item("a", "pending")])
+        apply_update(state, 0, status="skipped", delete_detection=None,
+                     new_url=None, failure_reason="operator skipped",
+                     now=self.now)
+        item = state["items"][0]
+        self.assertEqual(item["status"], "skipped")
+        self.assertEqual(item["skipped_at"], "2026-05-21T14:30:00")
+        self.assertIsNone(item["failed_at"])
 
     def test_unknown_status_raises(self):
         state = _state([_item("a", "pending")])
@@ -281,6 +292,7 @@ class CmdInitIntegration(unittest.TestCase):
         self.assertEqual(state["session_cap"], 5)
         self.assertEqual(len(state["items"]), 1)
         self.assertEqual(state["items"][0]["status"], "pending")
+        self.assertEqual(state["items"][0]["pending_at"], "2026-05-21T14:00:00")
 
     def test_resume_returns_existing_file_when_work_unfinished(self):
         rc, first = self._run_init(self.queued_path)
