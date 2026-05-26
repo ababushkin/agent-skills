@@ -12,7 +12,7 @@ not what to do with them.
 
 | Layer | Source | Signal | When to run |
 |---|---|---|---|
-| 1 | eBay AU sold listings | **Sold** (primary anchor) | Always |
+| 1 | eBay AU sold listings | **Sold** (primary anchor) | Always when a browser is attached; else skip → lean on Layers 2–4 |
 | 2 | FB Marketplace live search | Asking (competitor set) | Always, unless Layer 1 strong AND item < $30 |
 | 3 | Gumtree AU search | Asking (fallback) | Always when Layer 1 weak (n<3); else only if Layer 2 returned <3 |
 | 4 | Google snippet search | Asking (last resort) | Only when Layers 1–3 combined yield <3 valid comps |
@@ -33,6 +33,69 @@ https://www.ebay.com.au/sch/i.html?_nkw=<keywords>&LH_Sold=1&LH_Complete=1&_ipg=
 - `LH_Sold=1` and `LH_Complete=1` together filter to **sold** listings only
   (without `_Sold`, `_Complete` includes unsold ended auctions).
 - `_ipg=60` returns 60 results per page — usually enough.
+
+### Fetch mechanism — browser-driven (not a plain GET)
+
+eBay AU blocks non-browser HTTP clients: a plain WebFetch / WebSearch GET to the
+URL above returns an Akamai **403 "Access Denied"** edge block or a
+`splashui/challenge` interstitial — **never sold rows**. A real browser session
+(cookies + JS) clears the challenge in ~3 s. So Layer 1 runs through the **same
+attached Chrome (port 9222) as Layer 2**, via Chrome DevTools MCP. Unlike FB,
+eBay's search is URL-driven — the params survive navigation, so there's no
+searchbox to type into; you navigate straight to the URL.
+
+Sequence (reuse a single eBay search tab across items, like Layer 2's FB tab):
+
+1. `navigate_page` → the eBay sold URL above (keywords URL-encoded).
+2. Pause **~3 s** for the `splashui/challenge` interstitial to auto-clear. Tune
+   from 3 s: if step 3 still shows the challenge / "Access Denied" / a "checking
+   your browser" page instead of result rows, wait once more (up to ~8 s total)
+   or `navigate_page` reload once. If it still won't clear, that's a
+   stop-the-line (see below) — not an empty result.
+3. Read the resolved results page. Prefer `evaluate_script` to pull sold rows
+   straight from the DOM — more reliable than the a11y snapshot for a dense
+   result grid. As of this writing eBay AU renders each result as `li.s-card`
+   (older layout: `li.s-item`): title in `.s-card__title` (`.s-item__title`),
+   price in `.s-card__price` (`.s-item__price`), sold date in the card's
+   caption / "Sold <date>" signal line (feeds the recency filter below).
+   **Skip the first card** — eBay seeds a hidden "Shop on eBay" template row.
+   Take the first price per card (the sold price) and parse the leading number
+   from strings like "AU $44.49" or a range "AU $20 to AU $40". Selectors
+   drift: if a parse returns **zero rows while the page clearly shows results**,
+   that's stale selectors — re-derive them from a fresh snapshot, don't record
+   0 comps.
+4. Parse median / min / max / count from the sold prices, then apply the recency
+   filter, outlier trim, and captures schema below — all unchanged.
+
+### Run-budget rules (rate-limit hygiene)
+
+- **8–15 s random pause between eBay searches** in a single run — same cadence
+  as Layer 2's FB pause, because Layer 1 now shares the same browser and the
+  same rate-limit surface.
+- **No hard per-run search cap** (unlike Layer 2's 20-FB-search cap): eBay
+  search is read-only and not tied to the logged-in account that posts, so the
+  ban consequence is lower. The pause is the primary hygiene; a block that
+  recurs across several items is the rate-limit signal — escalate via
+  stop-the-line (below) rather than enforcing a fixed count.
+- Same **stop-the-line conditions** as Layer 2 and the listing-creation loop
+  (`browser-automation.md` § Stop-the-line). The transient ~3 s challenge that
+  clears itself is normal; a block that *persists* after a reload, a captcha, a
+  "browsing too fast" warning, or a login wall → screenshot + surface to the
+  user, stop the search loop. Do not retry-search.
+
+### No attached browser (Text Mode without Chrome)
+
+This path is reachable in **Text Mode only** — Folder and Refresh Mode hard-gate
+on an attached Chrome at Phase 0 and abort before pricing, so Layer 1 always has
+a browser there.
+
+Layer 1 needs the browser. With no attached Chrome, **do not fall back to a
+plain GET** — it returns the 403 / challenge page, never comps, so a
+"best-effort" GET is just a guaranteed-empty request that risks misparsing the
+block page as data. Instead record `skipped_reason: "no_browser_session"` on
+`ebay_sold` (the same value Layer 2 uses) and lean on Layers 2–4, applying the
+asking→sold gap (×0.80) to the asking-side anchor. Comp confidence drops
+accordingly.
 
 ### Optional refinements
 
@@ -259,7 +322,7 @@ layer doesn't run, populate `skipped_reason`:
 | `"sub_30_strong_anchor"` | Layer 1 strong + item < $30 → Layer 2 skipped |
 | `"layer1_strong_layer2_sufficient"` | Layer 1 strong + Layer 2 ≥ 3 → Layer 3 skipped |
 | `"layers_1_to_3_sufficient"` | Layers 1–3 combined ≥ 3 → Layer 4 skipped |
-| `"no_browser_session"` | Text Mode without attached Chrome → Layer 2 skipped |
+| `"no_browser_session"` | Text Mode without attached Chrome → Layer 1 and/or Layer 2 skipped (both are browser-driven) |
 | `"wrong_location"` | FB widened scope past Melbourne region |
 | `"stop_the_line"` | Captcha / login wall / rate-limit — see browser-automation.md |
 | `"zero_results"` | Layer ran but returned nothing on-topic |
@@ -273,6 +336,7 @@ heading rather than dropping the heading.
 
 | Rationalisation | Why it fails |
 |---|---|
+| "eBay sold via WebFetch came back empty — Layer 1 has no comps, skip it." | WebFetch can't clear eBay's bot challenge (it returns a 403 / `splashui` page, not rows). That's the wrong tool, not "no comps." Drive Layer 1 through the attached Chrome. |
 | "eBay had n=0 — I'll just use the asking median as the target." | Apply the asking→sold gap (×0.80). Asking median ≠ realised price; ignoring the gap is what the prior protocol got wrong. |
 | "I'll skip Layer 2 — Layer 1 was strong." | Only skip Layer 2 when target < $30. Above $30, Layer 2 catches stale-sold / live-market divergence (sanity-check role). |
 | "The first 20 FB cards looked off-topic — I'll just write count=0." | Scroll and re-snapshot once before giving up. Partial on-topic count is more honest than abandoning the layer. |

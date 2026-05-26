@@ -57,10 +57,14 @@ For each item typed or pasted:
 
 2. **Search live comparables (4-layer protocol).** Required every time.
    Full protocol in `references/live-comp-search.md`. Short version:
-   - **Layer 1 — eBay AU sold listings (primary anchor):**
-     `https://www.ebay.com.au/sch/i.html?_nkw=<keywords>&LH_Sold=1&LH_Complete=1&_ipg=60`
-     Sold-only, last 60 days. **Always run.** Capture median / min / max /
-     count / search URL.
+   - **Layer 1 — eBay AU sold listings (primary anchor):** browser-driven on
+     the attached Chrome — eBay blocks plain GETs with a bot challenge, so
+     navigate the sold URL
+     (`...?_nkw=<keywords>&LH_Sold=1&LH_Complete=1&_ipg=60`), wait ~3 s for the
+     challenge to clear, then parse. Sold-only, last 60 days. **Run whenever a
+     browser is attached;** with no Chrome, record
+     `skipped_reason: "no_browser_session"` and lean on Layers 2–4. Capture
+     median / min / max / count / search URL.
    - **Layer 2 — FB Marketplace live (asking competitor set):** browser-only
      (client-rendered). Skip if Chrome on port 9222 isn't attached — record
      `skipped_reason: "no_browser_session"`. Skip if Layer 1 is strong AND
@@ -153,11 +157,16 @@ For each subfolder, one item at a time:
 ### Phase 2 — Pricing (after all items drafted)
 
 1. **Announce the run.** Tell the user: *"Searching live comps for N items
-   (~40 s/item, ~Ns total)…"*
+   (~60 s/item, ~Ns total)…"* (Layer 1 is now a browser navigation plus an
+   8–15 s inter-search pause, on top of the FB layer.)
 
 2. **For each item, run the 4-layer comp-search protocol** in
    `references/live-comp-search.md`:
-   - Layer 1 (eBay AU sold) + Layer 3 (Gumtree AU) — plain GETs, back-to-back.
+   - Layer 1 (eBay AU sold) — **browser-driven** on the attached Chrome (eBay
+     blocks plain GETs with a bot challenge). Navigate the sold URL, ~3 s for
+     the challenge to clear, then parse the result grid. 8–15 s pause between
+     eBay searches, same as FB. Reuse a single eBay tab across items.
+   - Layer 3 (Gumtree AU) — plain GET.
    - Layer 2 (FB Marketplace live) — browser-driven, reusing a single search
      tab on the attached Chrome. 8–15 s random pause between FB searches.
      Cap **20 FB searches per run** — folders >20 items batch into a second
@@ -763,8 +772,9 @@ not suggestions.
 User: *"Selling my old Weber Q1200 BBQ, works fine, a bit of rust on the
 stand, no gas bottle."*
 
-After running the 4-layer comp protocol (eBay AU sold + Gumtree AU + Google
-fallback — no browser in Text Mode unless attached):
+After running the 4-layer comp protocol (Layer 1 eBay sold is browser-driven,
+so this example assumes the attached Chrome; with no browser, Text Mode skips
+Layer 1 and leans on Gumtree + Google with the asking→sold gap):
 
 ```
 🏷️ Weber Q1200 Portable BBQ — $140
