@@ -49,14 +49,13 @@ anchor to those instead — they already price in depreciation and demand.
 
 ## What counts as a valid comp
 
-The 4-layer search protocol that produces comps lives in
+The 3-layer search protocol that produces comps lives in
 `live-comp-search.md`. This section is the rule set for **what to keep** once
 you have results. The same rules apply to every layer; differences are noted
 inline.
 
-- **Recency.** eBay sold listings ≤ 60 days old. Gumtree cards: exclude any
-  showing "Posted >30 days ago" (those are listings that didn't sell). FB
-  Marketplace live is current by definition.
+- **Recency.** eBay sold listings ≤ 60 days old. FB Marketplace live is
+  current by definition.
 - **Condition match.** Prefer same-tier comps. One tier away is fine without
   adjustment. Two tiers away counts only as a last signal, with a tier-step
   adjustment derived from the condition ladder above. Unknown-condition comps
@@ -81,7 +80,7 @@ inline.
   Garage sale = instant cash, no messaging, deep discounts expected.
 - **Sold beats asking, every time.** eBay AU sold listings
   (`LH_Sold=1&LH_Complete=1`) are the **primary anchor** — the only signal
-  that reflects actual realised AU prices. FB Marketplace and Gumtree show
+  that reflects actual realised AU prices. FB Marketplace shows
   what sellers *want*, not what items go for. Use asking medians as the
   competitor set / ceiling, not as the target. Full protocol:
   `live-comp-search.md`.

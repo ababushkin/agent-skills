@@ -1,4 +1,4 @@
-# Live Comp Search — 4-Layer Protocol
+# Live Comp Search — 3-Layer Protocol
 
 The agent runs this loop in **Phase 2 (Pricing)** of Folder Mode, and in
 **Step 2** of Text Mode, for every item being priced. Sold-anchored, multi-
@@ -8,14 +8,13 @@ Pricing math (target → list → floor → garage-sale) lives in `SKILL.md` and
 `pricing-reference.md`. **This file is about how to find the comp numbers**,
 not what to do with them.
 
-## The 4 layers, in order
+## The 3 layers, in order
 
 | Layer | Source | Signal | When to run |
 |---|---|---|---|
-| 1 | eBay AU sold listings | **Sold** (primary anchor) | Always when a browser is attached; else skip → lean on Layers 2–4 |
+| 1 | eBay AU sold listings | **Sold** (primary anchor) | Always when a browser is attached; else skip → lean on Layers 2–3 |
 | 2 | FB Marketplace live search | Asking (competitor set) | Always, unless Layer 1 strong AND item < $30 |
-| 3 | Gumtree AU search | Asking (fallback) | Always when Layer 1 weak (n<3); else only if Layer 2 returned <3 |
-| 4 | Google snippet search | Asking (last resort) | Only when Layers 1–3 combined yield <3 valid comps |
+| 3 | Google snippet search | Asking (last resort) | Only when Layers 1–2 combined yield <3 valid comps |
 
 Every layer either produces a captured block or a `skipped_reason` — never
 silently absent. See "Recording skipped layers" at the bottom.
@@ -93,7 +92,7 @@ Layer 1 needs the browser. With no attached Chrome, **do not fall back to a
 plain GET** — it returns the 403 / challenge page, never comps, so a
 "best-effort" GET is just a guaranteed-empty request that risks misparsing the
 block page as data. Instead record `skipped_reason: "no_browser_session"` on
-`ebay_sold` (the same value Layer 2 uses) and lean on Layers 2–4, applying the
+`ebay_sold` (the same value Layer 2 uses) and lean on Layers 2–3, applying the
 asking→sold gap (×0.80) to the asking-side anchor. Comp confidence drops
 accordingly.
 
@@ -215,61 +214,9 @@ just honest.
 
 ---
 
-## Layer 3 — Gumtree AU (asking-side, fallback)
+## Layer 3 — Google snippet fallback
 
-### URL template
-
-```
-https://www.gumtree.com.au/s-<cat-slug>/melbourne-region/<keywords>/k0c<cat-code>l3001317
-```
-
-- `l3001317` = **Melbourne Region** location code. Hardcoded — AU/Melbourne
-  scope only.
-- `c0` = "all categories" — use when the category is genuinely uncertain.
-
-### Category codes (most common)
-
-| Category | Slug | Code |
-|---|---|---|
-| Sporting goods | sporting-goods | c9311 |
-| Home & Garden | home-garden | c18293 |
-| Electronics & Computer | electronics-computer | c9266 |
-| Baby & Children | baby-children | c20186 |
-| Musical Instruments | musical-instruments | c18280 |
-
-Other categories: drop the `<cat-slug>` to `for-sale` and use `c0` — Gumtree
-will return matches across all categories.
-
-### Recency filter
-
-Gumtree shows "Posted X days ago" on each card. Exclude anything labelled
-**>30 days ago** — those listings have failed to sell and warp the median.
-
-### When to run
-
-- **Always when Layer 1 is weak** (n<3 sold) — Gumtree is the primary asking-
-  side fallback in that case.
-- **Only run when Layer 1 is strong AND Layer 2 yielded <3 comps** — saves
-  a request when the sold anchor is solid and FB already gave a sanity check.
-
-### Captures
-
-```
-{
-  "median": <int AUD>,
-  "min": <int AUD>,
-  "max": <int AUD>,
-  "count": <int>,
-  "search_url": "<full URL>",
-  "skipped_reason": null
-}
-```
-
----
-
-## Layer 4 — Google snippet fallback
-
-Only fires when Layers 1–3 **combined** produce <3 valid comps (e.g. genuinely
+Only fires when Layers 1–2 **combined** produce <3 valid comps (e.g. genuinely
 niche or discontinued items).
 
 Existing search patterns:
@@ -279,7 +226,7 @@ Existing search patterns:
 - `used <item type> price australia`
 
 Extract any concrete price mentions from snippets. Confidence is auto-
-downgraded to `"low"` when Layer 4 is the anchor source — Google snippets
+downgraded to `"low"` when Layer 3 is the anchor source — Google snippets
 mix new RRP, US prices, and old listings without distinguishing them.
 
 ### Captures
@@ -298,8 +245,7 @@ mix new RRP, US prices, and old listings without distinguishing them.
 Full rules and condition ladder live in `pricing-reference.md` (section: "What
 counts as a valid comp"). The short version:
 
-- **Recency** — eBay sold ≤60 d; Gumtree exclude "posted >30 d ago"; FB live
-  is current by definition.
+- **Recency** — eBay sold ≤60 d; FB live is current by definition.
 - **Condition match** — same tier preferred; one tier away OK without
   adjustment; two tiers away only as last signal, with tier-step adjustment.
   Unknown condition → treat as "good", mark `condition: unknown`.
@@ -314,14 +260,13 @@ counts as a valid comp"). The short version:
 
 ## Recording skipped layers (auditability)
 
-A `comps` block in run-state always contains all four layer keys. When a
+A `comps` block in run-state always contains all three layer keys. When a
 layer doesn't run, populate `skipped_reason`:
 
 | `skipped_reason` value | Meaning |
 |---|---|
 | `"sub_30_strong_anchor"` | Layer 1 strong + item < $30 → Layer 2 skipped |
-| `"layer1_strong_layer2_sufficient"` | Layer 1 strong + Layer 2 ≥ 3 → Layer 3 skipped |
-| `"layers_1_to_3_sufficient"` | Layers 1–3 combined ≥ 3 → Layer 4 skipped |
+| `"layers_1_to_2_sufficient"` | Layers 1–2 combined ≥ 3 → Layer 3 (Google) skipped |
 | `"no_browser_session"` | Text Mode without attached Chrome → Layer 1 and/or Layer 2 skipped (both are browser-driven) |
 | `"wrong_location"` | FB widened scope past Melbourne region |
 | `"stop_the_line"` | Captcha / login wall / rate-limit — see browser-automation.md |
@@ -341,4 +286,3 @@ heading rather than dropping the heading.
 | "I'll skip Layer 2 — Layer 1 was strong." | Only skip Layer 2 when target < $30. Above $30, Layer 2 catches stale-sold / live-market divergence (sanity-check role). |
 | "The first 20 FB cards looked off-topic — I'll just write count=0." | Scroll and re-snapshot once before giving up. Partial on-topic count is more honest than abandoning the layer. |
 | "I'll skip the 8–15 s pause between FB searches — the listing-creation delay is what matters." | Read traffic also triggers rate limits on Marketplace search. Burst searching can captcha the same account that's about to post listings. |
-| "Listings posted >30 d ago on Gumtree are still real comps." | They're listings that **didn't sell**. Including them pulls the asking median upward and breaks the asking→sold-gap math. |

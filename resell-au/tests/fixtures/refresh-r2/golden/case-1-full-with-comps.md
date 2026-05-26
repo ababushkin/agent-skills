@@ -41,8 +41,5 @@ Pickup Caulfield East, cash or PayID on collection.
 - Median: $15 | Range: $4–$30 | n=25
 - Query: "easiyo yoghurt maker"
 
-### Gumtree AU (asking)
-- skipped (stop_the_line — Akamai WAF detects automation)
-
 ### Fallback notes
 Google: EasiYo new at Big W $22 with frequent $12.50 Coles specials.

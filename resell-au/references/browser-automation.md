@@ -410,7 +410,7 @@ if:
 | 2FA prompt appears | Screenshot + "2FA required — please complete it in the browser, then reply `continue`." |
 | "Posting too fast" / rate-limit message | Screenshot + "Rate-limit warning on [Platform]. Suggest waiting at least 10 minutes before continuing. Reply `continue` when ready." |
 | Login wall (session expired) | Screenshot + "Logged out of [Platform]. Please log back in in the browser, then reply `continue`." |
-| eBay bot block persists (Layer 1: "Access Denied" or `splashui/challenge` still showing after ~8 s + one reload) | Not the transient ~3 s challenge, which clears itself — only a block that won't clear. For a single item: record `skipped_reason: "stop_the_line"` on `ebay_sold` and lean on Layers 2–4 (read-only search — don't halt the whole run). If it blocks across several items in a row, that's an IP rate-limit → stop the line and surface, as for the rate-limit row above. |
+| eBay bot block persists (Layer 1: "Access Denied" or `splashui/challenge` still showing after ~8 s + one reload) | Not the transient ~3 s challenge, which clears itself — only a block that won't clear. For a single item: record `skipped_reason: "stop_the_line"` on `ebay_sold` and lean on Layers 2–3 (read-only search — don't halt the whole run). If it blocks across several items in a row, that's an IP rate-limit → stop the line and surface, as for the rate-limit row above. |
 | Snapshot doesn't match field map | As described in Step 2 above. |
 | MCP error / navigation failure | Surface the error, stop. Do not retry silently. |
 | **Undetected deletion** (Phase R1 only) | After the 15 s URL poll, if neither `unavailable_product=1` redirect nor "no longer available" copy is observed: screenshot + "Couldn't confirm deletion of `<item>` within 15 s. Do NOT proceed to recreate. Please verify in the browser, then reply `continue` (skip the recreate for this item) or `manual-delete` (you'll delete it manually first)." Never re-list while deletion is unconfirmed. |
@@ -445,7 +445,6 @@ Schema:
         "anchor_source": "sold_median | blended | asking_only",
         "ebay_sold":      { "median": 72, "min": 55, "max": 110, "count": 8, "window_days": 60, "search_url": "...", "skipped_reason": null },
         "fb_marketplace": { "median": 95, "min": 80, "max": 140, "count": 6, "query": "...", "skipped_reason": null },
-        "gumtree":        { "median": 85, "min": 70, "max": 110, "count": 4, "search_url": "...", "skipped_reason": null },
         "google_fallback": { "ran": false, "notes": null }
       },
       "platforms": {

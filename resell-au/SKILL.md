@@ -55,7 +55,7 @@ For each item typed or pasted:
    unclear and it materially changes the price, ask **one** tight question —
    otherwise proceed and state your assumption in the block.
 
-2. **Search live comparables (4-layer protocol).** Required every time.
+2. **Search live comparables (3-layer protocol).** Required every time.
    Full protocol in `references/live-comp-search.md`. Short version:
    - **Layer 1 — eBay AU sold listings (primary anchor):** browser-driven on
      the attached Chrome — eBay blocks plain GETs with a bot challenge, so
@@ -63,18 +63,15 @@ For each item typed or pasted:
      (`...?_nkw=<keywords>&LH_Sold=1&LH_Complete=1&_ipg=60`), wait ~3 s for the
      challenge to clear, then parse. Sold-only, last 60 days. **Run whenever a
      browser is attached;** with no Chrome, record
-     `skipped_reason: "no_browser_session"` and lean on Layers 2–4. Capture
+     `skipped_reason: "no_browser_session"` and lean on Layers 2–3. Capture
      median / min / max / count / search URL.
    - **Layer 2 — FB Marketplace live (asking competitor set):** browser-only
      (client-rendered). Skip if Chrome on port 9222 isn't attached — record
      `skipped_reason: "no_browser_session"`. Skip if Layer 1 is strong AND
      item < $30.
-   - **Layer 3 — Gumtree AU (asking fallback):**
-     `https://www.gumtree.com.au/s-.../melbourne-region/<keywords>/k0c<cat>l3001317`
-     Run when Layer 1 is weak (n<3) or Layer 2 returned <3.
-   - **Layer 4 — Google snippet fallback:** old patterns
+   - **Layer 3 — Google snippet fallback:** old patterns
      (`<brand model> facebook marketplace australia`, etc.). Only when
-     Layers 1–3 combined yield <3 comps. Auto-downgrades confidence to `"low"`.
+     Layers 1–2 combined yield <3 comps. Auto-downgrades confidence to `"low"`.
 
    Anchor pricing on **sold median** (Layer 1) when n≥3 post-trim. Fall-through
    in the next step.
@@ -160,18 +157,17 @@ For each subfolder, one item at a time:
    (~60 s/item, ~Ns total)…"* (Layer 1 is now a browser navigation plus an
    8–15 s inter-search pause, on top of the FB layer.)
 
-2. **For each item, run the 4-layer comp-search protocol** in
+2. **For each item, run the 3-layer comp-search protocol** in
    `references/live-comp-search.md`:
    - Layer 1 (eBay AU sold) — **browser-driven** on the attached Chrome (eBay
      blocks plain GETs with a bot challenge). Navigate the sold URL, ~3 s for
      the challenge to clear, then parse the result grid. 8–15 s pause between
      eBay searches, same as FB. Reuse a single eBay tab across items.
-   - Layer 3 (Gumtree AU) — plain GET.
    - Layer 2 (FB Marketplace live) — browser-driven, reusing a single search
      tab on the attached Chrome. 8–15 s random pause between FB searches.
      Cap **20 FB searches per run** — folders >20 items batch into a second
      run with ≥30 min gap.
-   - Layer 4 (Google snippet) — only when 1–3 combined yield <3 comps.
+   - Layer 3 (Google snippet) — only when 1–2 combined yield <3 comps.
    Capture every layer's results (or `skipped_reason`) into the per-item
    `comps` block of the run-state JSON. Same `comps` data is written to
    `listing.md` later in Phase 4 Step 7.
@@ -311,12 +307,8 @@ Write this exact template to `<item_subfolder>/listing.md` in Phase 4 Step 7:
 - Median: $X | Range: $a–$b | n=N
 - Query: "<keywords>"
 
-### Gumtree AU (asking)
-- Median: $X | Range: $a–$b | n=N
-- Search: <URL>
-
 ### Fallback notes
-<only present when Layer 4 ran>
+<only present when Layer 3 ran>
 
 ## Refresh history
 <only present after the item has been refreshed at least once>
@@ -384,7 +376,6 @@ Schema:
         "anchor_source": "sold_median | blended | asking_only",
         "ebay_sold":      { "median": 72, "min": 55, "max": 110, "count": 8, "window_days": 60, "search_url": "...", "skipped_reason": null },
         "fb_marketplace": { "median": 95, "min": 80, "max": 140, "count": 6, "query": "...", "skipped_reason": null },
-        "gumtree":        { "median": 85, "min": 70, "max": 110, "count": 4, "search_url": "...", "skipped_reason": null },
         "google_fallback": { "ran": false, "notes": null }
       },
       "platforms": {
@@ -574,7 +565,7 @@ Rules for the block:
 
 ## Pricing model
 
-Anchor on **sold data, not asking data**. Run the 4-layer comp-search
+Anchor on **sold data, not asking data**. Run the 3-layer comp-search
 protocol (`references/live-comp-search.md`) first, then:
 
 1. **Target = sold_median** (eBay AU sold, post-trim) when `n ≥ 3`. Apply
@@ -739,8 +730,8 @@ not suggestions.
 - `references/pricing-reference.md` — condition ladder, per-category
   depreciation, AU market norms, what counts as a valid comp. Read when an
   item's category is non-obvious or you need a sharper depreciation anchor.
-- `references/live-comp-search.md` — the 4-layer comp-search protocol
-  (eBay AU sold → FB Marketplace live → Gumtree AU → Google fallback),
+- `references/live-comp-search.md` — the 3-layer comp-search protocol
+  (eBay AU sold → FB Marketplace live → Google fallback),
   exact URL templates, FB browser-navigation sequence, run-budget rules.
   **Read in Phase 2 before pricing any item.**
 - `references/chrome-setup.md` — one-time Chrome attach setup (dedicated
@@ -772,9 +763,9 @@ not suggestions.
 User: *"Selling my old Weber Q1200 BBQ, works fine, a bit of rust on the
 stand, no gas bottle."*
 
-After running the 4-layer comp protocol (Layer 1 eBay sold is browser-driven,
+After running the 3-layer comp protocol (Layer 1 eBay sold is browser-driven,
 so this example assumes the attached Chrome; with no browser, Text Mode skips
-Layer 1 and leans on Gumtree + Google with the asking→sold gap):
+Layer 1 and leans on Google with the asking→sold gap):
 
 ```
 🏷️ Weber Q1200 Portable BBQ — $140
@@ -792,8 +783,7 @@ Pickup [your suburb], cash or PayID on collection.
 —— seller notes (not for the ad) ——
 • Target: ~$130  |  Floor: $110  |  Garage sale: $70
 • Comp confidence: high  |  Anchor: sold_median
-• Why: eBay AU sold median $135 (n=11, 60-day window); Gumtree asking
-  $140–$180 confirms list is below the cheapest clean comp.
+• Why: eBay AU sold median $135 (n=11, 60-day window).
 • Tips: Lead photo with lid up showing clean burner. Expect a "$100 today?"
   message — $110 is your yes. Sells fastest Sept–Dec (BBQ season).
 ```
