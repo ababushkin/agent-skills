@@ -256,10 +256,30 @@ and the target may be far down. The Phase 4 listing title (from
 `listing.md` `**Title:**` line) is the natural filter input.
 
 Single-result narrowing usually works because the listing title is
-unique within a seller's set. If multiple rows match (e.g. user listed
-the same item twice), pick by `target_id=<listing_id>` in the
-`Promote now` link URL of the row — that's the only place the listing
-ID appears in the row markup.
+unique within a seller's set. If multiple rows match (e.g. the user
+listed the same item twice), identify the correct row via its
+ad-preview iframe: the page renders one `ads/ad_preview_generator_iframe`
+per row, and each iframe's `creative_spec.link_data.link` contains the
+real listing URL. Extract them with:
+
+```js
+Array.from(document.querySelectorAll('iframe[src*="ads/ad_preview_generator_iframe"]'))
+  .map(f => {
+    const m = f.src.match(/[?&]creative_spec=([^&]+)/);
+    if (!m) return null;
+    try {
+      const spec = JSON.parse(decodeURIComponent(m[1]));
+      const ld = spec.object_story_spec.link_data;
+      return ld ? { url: ld.link, name: ld.name } : null;
+    } catch (e) { return null; }
+  })
+```
+
+Pick the row whose returned `url` matches the listing URL stored in
+`listing.md`. Note: the `target_id=…` param on each row's `Promote
+now` link looks like a listing ID but is FB's **ad-targeting** ID —
+do not use it for row identification (see "Listing-URL recovery via
+Selling-page iframe" above).
 
 ### Menu and confirm-dialog patterns
 
