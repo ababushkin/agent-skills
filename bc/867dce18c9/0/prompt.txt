@@ -1,0 +1,62 @@
+/resell-au ~/Desktop/things-for-sale
+
+---
+
+keep the ad copy much more simpler, and list for $70
+the ad copy can be something like: As new - barely used. Pick up Caulfield East
+
+---
+
+/resell-au-tracker
+
+---
+
+lets clean up the listings as some things sold differently and i want to get rid of them from my tracker files
+
+street fighter 6
+last of us
+mgp scooters
+ghost of yotei
+canon digital ixus 900
+
+---
+
+/resell-au refresh ~/Desktop/things-for-sale
+
+---
+
+home and co chair already sold
+
+---
+
+<task-notification>
+<task-id>bv2v7e7cz</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-agent-skills/7eb2a9c1-7bf1-447d-8b78-54a7ca34c5dd/tasks/bv2v7e7cz.output</output-file>
+<status>completed</status>
+<summary>Background command "Inter-item human-cadence delay" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+refresh ~/Desktop/things-for-sale
+
+---
+
+go through all my open listings now that weren't recently refreshed and check the messages that people sent me, i want to see which items people are picking up and on what dates, we've agreed to but i want you to summarize it for me so i don't forget. remember this is all in Melbourne, Australia so keep the timezones friendly
+
+---
+
+can you create google calendar entries in my calendar?
+
+---
+
+done i've fixed the permissions
+
+---
+
+try again
+
+---
+
+lets turn this into a reusable skill now, using the /skill-creator:skill-creator skill

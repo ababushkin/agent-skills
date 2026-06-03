@@ -1,0 +1,52 @@
+{
+  "cli_version": "0.6.3",
+  "checkpoint_id": "bc867dce18c9",
+  "session_id": "7eb2a9c1-7bf1-447d-8b78-54a7ca34c5dd",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-03T11:09:05.02941Z",
+  "branch": "feat/resell-au-pickups",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "resell-au-pickups/scripts/make_ics.py",
+    "resell-au-pickups/tests/fixtures/events.json",
+    "resell-au-pickups/tests/check_make_ics.sh",
+    "resell-au-pickups/references/inbox-extraction.md",
+    "resell-au-pickups/references/calendar-export.md",
+    "resell-au-pickups/SKILL.md",
+    "resell-au-pickups/evals/evals.json"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-4-8[1m]",
+  "turn_id": "ad6b6c566bca",
+  "token_usage": {
+    "input_tokens": 92425,
+    "cache_creation_tokens": 935956,
+    "cache_read_tokens": 69044148,
+    "output_tokens": 164968,
+    "api_call_count": 366
+  },
+  "session_metrics": {
+    "turn_count": 4
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-03T11:09:04.95925Z",
+    "agent_lines": 614,
+    "agent_removed": 0,
+    "human_added": 64,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 678,
+    "total_lines_changed": 678,
+    "agent_percentage": 90.56047197640117,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
