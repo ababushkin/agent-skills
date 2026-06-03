@@ -52,13 +52,3 @@ garage-sale          → print labels and clear whatever's left
 
 The selling skills share a working folder (default `~/Desktop/things-for-sale/`),
 where each item is a subfolder holding its photos and a `listing.md` record.
-
-## Bundled Codex runtime skills
-
-These are general-purpose document skills (not part of the selling toolkit),
-kept under `codex-primary-runtime/`:
-
-| Skill | What it does | Use it when |
-|-------|--------------|-------------|
-| **PowerPoint** (`codex-primary-runtime/slides`) | Create, edit, render, verify, and export editable `.pptx` slide decks. | Building or revising a presentation / slide deck / PPTX. |
-| **Excel** (`codex-primary-runtime/spreadsheets`) | Create, modify, analyse, and visualise spreadsheets (`.xlsx`/`.xls`/`.csv`/`.tsv`) with formulas, formatting, charts, and tables. | Building or analysing a spreadsheet, model, dashboard, or tracker. |
