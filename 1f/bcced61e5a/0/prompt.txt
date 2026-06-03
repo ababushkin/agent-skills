@@ -1,0 +1,5 @@
+merge straight into main and push
+
+---
+
+go through my readme and update it with a reference to all the skills available in this pack, including this new one we just built, including how and when to use it
