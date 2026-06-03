@@ -1,0 +1,64 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//resell-au-pickups//make_ics//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VTIMEZONE
+TZID:Australia/Melbourne
+BEGIN:STANDARD
+DTSTART:19700405T030000
+RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=1SU
+TZOFFSETFROM:+1100
+TZOFFSETTO:+1000
+TZNAME:AEST
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:19701004T020000
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=1SU
+TZOFFSETFROM:+1000
+TZOFFSETTO:+1100
+TZNAME:AEDT
+END:DAYLIGHT
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:resell-mahfuzul-desk@things-for-sale
+DTSTAMP:20200101T000000Z
+DTSTART;TZID=Australia/Melbourne:20260603T200000
+DTEND;TZID=Australia/Melbourne:20260603T210000
+SUMMARY:Deliver folding desk -> Mahfuzul ($45)
+LOCATION:10 Kintore St\, Camberwell VIC
+DESCRIPTION:Drop off Portable Folding Desk. $35 item + $10 delivery = $45 c
+ ash. TEXT HIM BEFORE YOU LEAVE.
+BEGIN:VALARM
+TRIGGER:-PT45M
+ACTION:DISPLAY
+DESCRIPTION:Deliver folding desk -> Mahfuzul ($45)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:resell-cuiran-lamp@things-for-sale
+DTSTAMP:20200101T000000Z
+DTSTART;TZID=Australia/Melbourne:20260605T080000
+DTEND;TZID=Australia/Melbourne:20260605T083000
+SUMMARY:Cuiran - copper floor lamp pickup ($30)
+LOCATION:2/35-37 Grange Road\, Caulfield East VIC
+DESCRIPTION:Copper Floor Lamp\, marble base\, spare bulb already inside. $3
+ 0 cash. Small car\, goes straight to work - have it ready by the door for 
+ 8am.
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Cuiran - copper floor lamp pickup ($30)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:resell-ankita-wokburner@things-for-sale
+DTSTAMP:20200101T000000Z
+DTSTART;TZID=Australia/Melbourne:20260604T100000
+DTEND;TZID=Australia/Melbourne:20260604T103000
+SUMMARY:Ankita - wok burner pickup (TBC) ($65)
+LOCATION:2/35-37 Grange Road\, Caulfield East VIC
+DESCRIPTION:Eastman Outdoors Wok Burner\, 2 woks + cover. $65 cash. TIME NO
+ T CONFIRMED - she said Thursday morning\; pin an exact time with her.
+END:VEVENT
+END:VCALENDAR

@@ -1,0 +1,66 @@
+{
+  "skill_name": "resell-au-pickups",
+  "notes": "Trigger-only evals. This skill drives a live Facebook session, so output cannot be benchmarked deterministically; these cases just exercise description triggering (should-trigger vs should-not-trigger).",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "go through my marketplace messages and tell me who's picking up what and when",
+      "should_trigger": true,
+      "expectations": ["Invokes resell-au-pickups", "Sweeps the FB Marketplace inbox and summarises pickups by day"]
+    },
+    {
+      "id": 2,
+      "prompt": "check the messages people sent me about my listings, I want to see pickup dates we've agreed to",
+      "should_trigger": true,
+      "expectations": ["Invokes resell-au-pickups", "Reports agreed pickup dates/times in Melbourne time"]
+    },
+    {
+      "id": 3,
+      "prompt": "what pickups have I agreed to this week?",
+      "should_trigger": true,
+      "expectations": ["Invokes resell-au-pickups"]
+    },
+    {
+      "id": 4,
+      "prompt": "can you add my marketplace pickups to my calendar?",
+      "should_trigger": true,
+      "expectations": ["Invokes resell-au-pickups", "Tries Google Calendar MCP, falls back to a .ics if read-only"]
+    },
+    {
+      "id": 5,
+      "prompt": "who's buying the desk and which day are they coming for it?",
+      "should_trigger": true,
+      "expectations": ["Invokes resell-au-pickups", "Reads the relevant buyer threads"]
+    },
+    {
+      "id": 6,
+      "prompt": "summarise my facebook buyer chats so I don't forget who's collecting things",
+      "should_trigger": true,
+      "expectations": ["Invokes resell-au-pickups"]
+    },
+    {
+      "id": 7,
+      "prompt": "list my coffee table on facebook marketplace",
+      "should_trigger": false,
+      "expectations": ["Routes to resell-au (listing), NOT resell-au-pickups"]
+    },
+    {
+      "id": 8,
+      "prompt": "sync my listings into the tracker",
+      "should_trigger": false,
+      "expectations": ["Routes to resell-au-tracker, NOT resell-au-pickups"]
+    },
+    {
+      "id": 9,
+      "prompt": "print garage sale labels for everything in the folder",
+      "should_trigger": false,
+      "expectations": ["Routes to garage-sale, NOT resell-au-pickups"]
+    },
+    {
+      "id": 10,
+      "prompt": "how much should I sell my old violin for?",
+      "should_trigger": false,
+      "expectations": ["Routes to resell-au (pricing), NOT resell-au-pickups"]
+    }
+  ]
+}
