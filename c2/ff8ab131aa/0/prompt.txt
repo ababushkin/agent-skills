@@ -1,0 +1,1 @@
+lets rip out all the features that check if the password was compromised or if the website is still functioning - i just want this to be an awesome de-duplicator so that my passwords are clean
