@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.6.3",
+  "checkpoint_id": "04a3f81959fb",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "README.md",
+    "password-audit/README.md",
+    "password-audit/password_audit.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/04/a3f81959fb/0/metadata.json",
+      "transcript": "/04/a3f81959fb/0/full.jsonl",
+      "content_hash": "/04/a3f81959fb/0/content_hash.txt",
+      "prompt": "/04/a3f81959fb/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 54431,
+    "cache_creation_tokens": 288872,
+    "cache_read_tokens": 5130193,
+    "output_tokens": 87948,
+    "api_call_count": 70
+  }
+}

@@ -1,0 +1,508 @@
+i want to build a simple and secure utility script/program that checks all my passwords, discovers if any of them have been compromised or are insecure and does de-duplication. i'm migrating from 1password to apple passwords so want to do a clean up
+
+---
+
+i need to extend the program so that it can take my passwords from apple passwords and the ones from 1password so that i can deduplicate them, so that my final output is a clean deduplicated list
+
+there's also passwords that are being marked as unsafe but they're for local network things (i.e. they're on 192.x etc) so those should be ignored for safety checks
+
+lastly there are probably websites that i no longer access or are long gone, i want the audit script to pick up and flag which ones can be deleted
+
+---
+
+update readme to include instructions on how to use this script and what it does
+
+---
+
+this whole script and all of its artefacts should be moved to the ~/src/agent-skills directory
+
+---
+
+i still see duplicates. below is a copy/paste of the names and urls of the websites/logins and you'll see what i mean
+for example: lots of airtasker duplicates, ebay, etc
+
+some of these are of course for different people, you can tell by the email / name associated with the title, but there are others that are the same
+
+online.aami.com.au (olga.babushkin@gmail.com)
+form.census.abs.gov.au
+app.acuityscheduling.com (xeniagoh@gmail.com)
+afterpay.com (vegitto.ru@gmail.com)
+airtasker.com (vegitto.ru@gmail.com)
+www.airtasker.com (vegitto.ru@gmail.com)
+id.airtasker.com (vegitto.ru@gmail.com)
+us-east-1.signin.aws.amazon.com (Anton)
+signin.aws.amazon.com (babushkin.anton@gmail.com)
+smile.amazon.com (vegitto.ru@gmail.com)
+www.amazon.com (vegitto.ru@gmail.com)
+signin.aws.amazon.com (vegitto.ru@gmail.com)
+amazon.com.au (vegitto.ru@gmail.com)
+angel.co (babushkin.anton@gmail.com)
+order.arphotos.com.au (0433915395)
+yamahamusic.asapconnected.com (xeniagoh@gnail.com)
+sentosalogin.b2clogin.com (vegitto.ru@gmail.com)
+sentosalogin.b2clogin.com (xeniagoh@gmail.com)
+www.bestfriendspets.com.au (vegitto.ru@gmail.com)
+www.bestfriendspets.com.au (Xeniagoh@gmail.com)
+www.bicycles.net.au (bikermicefrommars)
+www.bicycles.net.au (vegitto.ru@gmail.com)
+www.big4.com.au (xeniagoh@gmail.com)
+signon.bigpond.com (babushkin.anton)
+bitmoji.com (vegitto.ru@gmail.com)
+gleneira.borrowbox.com (C16107D)
+www.bounceinc.com.au (xeniagoh@gmail.com)
+www.bunnings.com.au (vegitto.ru@gmail.com)
+account.bupa.com.au (babushkin.anton@gmail.com)
+my.bupa.com.au (babushkin.anton@gmail.com)
+ticketapp-sso.bvg.de (vegitto.ru@gmail.com)
+pages.caspio.com (vegittoru)
+rental.cdjapan.co.jp (vegitto.ru@gmail.com)
+www.codefuture.org (babushkin.anton@gmail.com)
+auth.colesgroupprofile.com.au (vegitto.ru@gmail.com)
+www2.commsec.com.au (50545310)
+carnegieps-vic.compass.education (BAB006)
+login-au.computershare.com (antonbabushkin)
+ssl2.connectintouch.com (vegitto.ru@gmail.com)
+cplonline.com.au (p9s4)
+sso-v2.crunchyroll.com (vegitto.ru@gmail.com)
+sso.crunchyroll.com (vegitto.ru@gmail.com)
+crunchyroll.com (vegitto.ru@gmail.com)
+vjw.digital.go.jp (vegitto.ru@gmail.com)
+cloud.digitalocean.com (vegitto.ru@gmail.com)
+mytestbusiness.disco.ac
+discord.com (vegitto.ru@gmail.com)
+discordapp.com (vegitto.ru@gmail.com)
+www.dropbox.com (vegitto.ru@gmail.com)
+transact.eastlink.com.au (xeniagoh@gmail.com)
+www.ebay.com.au (babushkin.anton)
+signin.ebay.com.au (babushkin.anton)
+signin.ebay.com.au (xeniagoh@gmail.com)
+accounts.ebay.com.au (xeniagoh@gmail.com)
+vprcidentity.eduweb.vic.gov.au (andrei.babushkin.780)
+www.emirates.com (294320386)
+fly10.emirates.com (294320386)
+epicgames.com (vegitto.ru@gmail.com)
+www.esim.net (vegitto.ru@gmail.com)
+www.evernote.com (antonbabushkin)
+tangfoodemporium.ezirewards.net (vegitto.ru@gmail.com)
+m.facebook.com (hammie333@gmail.com)
+www.facebook.com (vegitto.ru@gmail.com)
+m.facebook.com (yskeet470@gmail.com)
+m.facebook.com
+faphouse.com (crazy_rexy@hotmail.com)
+felixmobile.com.au (vegitto.ru@gmail.com)
+www.fitbit.com (vegitto.ru@gmail.com)
+login.fitlg.com (vegitto.ru@gmail.com)
+account.footballnetwork.com.au (vegitto.ru@gmail.com)
+app.fresho.com (xeniagoh@gmail.com)
+funker530.com (randomkeyboardwarrior)
+github.com (vegitto.ru@gmail.com)
+catalogue.gleneira.vic.gov.au (23162004039019)
+catalogue.gleneira.vic.gov.au (C16107D)
+accounts.google.com (andrei.babushkin1@gmail.com)
+accounts.google.com (babushkin.alyssa)
+accounts.google.com (babushkin.anton@gmail.com)
+accounts.google.com (vegitto.ru@gmail.com)
+accounts.google.com (xeniagoh@gmail.com)
+www.gumtree.com.au (xeniagoh@gmail.com)
+www.hellomusicshop.com (xeniagoh@gmail.com)
+app.hey.com (anton.babushkin@hey.com)
+hipages.com.au
+www.hipchat.com (anton@ladoo.com.au)
+stbcms.homedoctor.com.au (vegitto.ru@gmail.com)
+www.hoyts.com.au (vegitto.ru@gmail.com)
+clientportal.hrblock.com.au (ABABUS01)
+hydrawise.com (vegitto.ru@gmail.com)
+www.ihg.com (babushkin.anton@gmail.com)
+www.imdb.com
+online.immi.gov.au (Xeniagoh)
+secure.indeed.com (xeniagoh@gmail.com)
+www.instagram.com (brollyinfo)
+www.instapaper.com (vegitto.ru@gmail.com)
+iread-now.club (xeniagoh@gmail.com)
+ivysociete.com (crazy_rexy@hotmail.com)
+ivysociete.com (ensei)
+www.jbhifi.com.au (vegitto.ru@gmail.com)
+auth.jbhifi.com.au (vegitto.ru@gmail.com)
+account.jetbrains.com (ababushkin)
+auth.jetstar.com (xeniagoh@gmail.com)
+kik.me (vegitto.ru@gmail.com)
+kino.pub (vegitto.ru@gmail.com)
+www.kmart.com.au (xeniagoh@gmail.com)
+knowyourcouncil.vic.gov.au (anton)
+knowyourcouncil.vic.gov.au (babushkin.anton@gmail.com)
+knowyourcouncil.vic.gov.au (babushkin.anton3@gmail.com)
+knowyourcouncil.vic.gov.au (test)
+www.kogan.com (vegitto.ru@gmail.com)
+langtons.com.au (0433 915 395)
+lastpass.com (vegitto.ru@gmail.com)
+lastpass.com (xeniagoh@gmail.com)
+members.leanmuscle.com (vegitto.ru@gmail.com)
+leetcode.com (vegitto)
+lidraughts.org (vegitto)
+au.linkedin.com (babushkin.anton@gmail.com)
+www.linkedin.com (babushkin.anton@gmail.com)
+au.linkedin.com (xeniagoh@gmail.com)
+login.live.com (babushkin.alyssa@gmail.com)
+account.live.com (babushkin.alyssa@gmail.com)
+login.live.com (babushkin.anton@gmail.com)
+login.live.com (crazy_rexy@hotmail.com)
+locanto.com.au (ensei)
+lugna.online (xeniagoh@gmail.com)
+sit.maarts.com.au (Alyssa Babushkin)
+macpac.com.au (babushkin.anton@gmail.com)
+login.manning.com (vegitto.ru@gmail.com)
+livebook.manning.com (vegitto.ru@gmail.com)
+account.manning.com (vegitto.ru@gmail.com)
+au.manscaped.com (faller_08_marlins@icloud.com)
+marriott.com (vegitto.ru@gmail.com)
+student.mathletics.com (ALB15861)
+login.mathletics.com (ALB15861)
+menulog.com.au (vegitto.ru@gmail.com)
+www.meteor.com (anton)
+teams.microsoft.com (babushkin.anton@gmail.com)
+mind42.com (anton.babushkin)
+mind42.com (anton.babushkin)
+tommyrufffishbar.mobi2go.com (vegitto.ru@gmail.com)
+tommyrufffishbar.mobi2go.com
+my.moego.pet (babushkin.anton@gmail.com)
+mojo.so (crazy_rexy@hotmail.com)
+my.gov.au (SC400233)
+login.my.gov.au (SC400233)
+myaudi.com.au (3145)
+myaudi.com.au (babushkin.anton@gmail.com)
+myfitnesspal.com (vegitto.ru@gmail.com)
+regoform.mygameday.app (XeniaGoh)
+membership.mygameday.app (XeniaGoh)
+mymusclechef.com (vegitto.ru@gmail.com)
+wd5.myworkday.com (anton.babushkin)
+ib.nab.com.au (15868106)
+www.netflix.com (vegitto.ru@gmail.com)
+667efbea-portal.netlife.no (xeniagoh@gmail.com)
+accounts.nintendo.com (vegitto)
+ofx.com (babushkin.anton@gmail.com)
+onlyfans.com (crazy_rexy@hotmail.com)
+online.passports.gov.au (babushkin.anton@gmail.com)
+www.paypal.com (vegitto.ru@gmail.com)
+www.sandbox.paypal.com (vegitto.ru@gmail.com)
+www.paypal.com (Xeniagoh@gmail.com)
+in.pinterest.com (xeniagoh@gmail.com)
+in.pinterest.com
+www.pinterest.com.au (xeniagoh@gmail.com)
+www.pinterest.com.au
+registration.playfootball.com.au (vegitto.ru@gmail.com)
+playhq.com (xeniagoh@gmail.com)
+playkidsapp.com (hfdf)
+www.proformascreeningeauthorize.com (babushkin.anton@gmail.com)
+www.ptv.vic.gov.au (ababushkin)
+punterplanet.com (ensei)
+www.qantaspoints.com (Babushkin)
+www.qualtrim.com (vegitto.ru@gmail.com)
+raspberrypi (admin)
+sso.readingeggs.com (alyssa24926)
+www.rebelsport.com.au (xeniagoh@gmail.com)
+roblox.com (Bath_potato69)
+roblox.com (cheekyboy0101)
+roblox.com (slimdusty8)
+www.scribd.com (xeniagoh@gmail.com)
+www.sentosa.com.sg (vegitto.ru@gmail.com)
+www.sheridanoutlet.com.au (xeniagoh@gmail.com)
+my.shipafreight.com (xeniagoh@gmail.com)
+account.similarweb.com
+www.singaporeair.com (8888416717)
+www.singaporeair.com (babushkin.alyssa@gmail.com)
+www.singaporeair.com (xeniagoh@icloud.com)
+login.singpass.gov.sg (S7913523B)
+southeastwater.my.site.com (vegitto.ru@gmail.com)
+smoothcomp.com (vegitto.ru@gmail.com)
+snapchat.com (uzern4me)
+snapchat.com (vegitto.ru@gmail.com)
+shareworks.solium.com (CS-668771-11)
+sonos.com (vegitto.ru@gmail.com)
+login.sonos.com (vegitto.ru@gmail.com)
+login.ws.sonos.com (vegitto.ru@gmail.com)
+my.account.sony.com (andrei.babushkin1@gmail.com)
+sony.com (andrei.babushkin1@gmail.com)
+acm.account.sony.com (vegitto.ru@gmail.com)
+my.account.sony.com (vegitto.ru@gmail.com)
+id.sonyentertainmentnetwork.com (andrei.babushkin1@gmail.com)
+id.sonyentertainmentnetwork.com (vegitto.ru@gmail.com)
+app.spaceship.com.au (babushkin.anton@gmail.com)
+idp.sqprod.co (ababushkin)
+squareup.com (ababushkin@squareup.com)
+worldview.stratfor.com (vegitto.ru@gmail.com)
+www.stratfor.com (vegitto.ru@gmail.com)
+auth.streamotion.com.au (vegitto.ru@gmail.com)
+sugardaddy.com.au (crazy_rexy@hotmail.com)
+www.supercheapauto.com.au (xeniagoh@gmail.com)
+app.superhero.com.au (xeniagoh@gmail.com)
+myid.telstra.com (anton.babushkin)
+auth.tesla.com (babushkin.anton@gmail.com)
+thenakedtruth.reviews (rockkyy)
+thenakedtruth.reviews (therock)
+premier.ticketek.com.au (Search artist, event, venue, location ...)
+auth.ticketmaster.com (vegitto.ru@gmail.com)
+identity.ticketmaster.com.au (vegitto.ru@gmail.com)
+www.ticketmaster.com.au (vegitto.ru@gmail.com)
+tpg.com.au (antonbabushkin)
+signup4.tpg.com.au (antonbabushkin)
+absale.treesadventure.com.au (xeniagoh@gmail.com)
+absale.treetopsadventure.com.au (babushkin.anton@gmail.com)
+sg.trip.com (vegitto.ru@gmail.com)
+trueclassictees.com (vegitto.ru@gmail.com)
+www.trueclassictees.com (vegitto.ru@gmail.com)
+twitter.com (antonbabushkin)
+twitter.com (midnightblue890)
+www.ubank.com.au (vegitto.ru@gmail.com)
+accounts.uber.com
+auth3.uber.com
+memberonline.unisuper.com.au (XeniaGoh)
+www.upwork.com (Babushkin)
+accounts.velocityfrequentflyer.com (8150012400)
+www.vicroads.vic.gov.au (babushkin.anton@gmail.com)
+patient.visionradiology.com.au (vegitto.ru@gmail.com)
+identity.vwgroup.io (babushkin.anton@gmail.com)
+wechat.com (433 915 395)
+www.westernunion.com (vegitto.ru@gmail.com)
+forums.whirlpool.net.au (daem0n)
+login.xero.com (babushkin.anton@gmail.com)
+identity.xero.com (babushkin.anton@gmail.com)
+au.yamaha.com (xeniagoh@gmail.com)
+online.yvw.com.au (xeniagoh@gmail.com)
+us04web.zoom.us (Babushkin)
+192.168.0.1 (admin)
+192.168.0.29 (admin)
+192.168.1.1 (admin)
+192.168.1.250 (ababushkin)
+192.168.1.254 (admin)
+192.168.99.100 (anton)
+my.1password.com (babushkin.anton@gmail.com)
+privacy.io
+serviceseeking.com.au
+skywards.com
+co star
+Sportsbet
+Trustwallet
+dhvicp.b2clogin.com (babushkin.anton@gmail.com)
+velocityfrequentflyer.com
+Xhamster
+eurekareport.com.au
+disney+
+Line
+PropertyInvesting
+store.steampowered.com
+sugardaddymeet
+rutracker.net
+telstra.com
+crumpler.com
+Usj
+sentosalogin.b2clogin.com (babushkin.anton@gmail.com)
+Airbnb secondary
+portphillippublishing.com.au
+canva.com
+Optus Sport
+appsumo.com
+wc.wolframalpha.com
+Dyson
+adobe.com
+Sonos
+online.colesmastercard.com.au
+authy
+Po cruise
+wechat.com (433 915 395)
+www-au.computershare.com
+Nintendo
+tenplay
+premier.ticketek.com.au
+support.apple.com (vegitto.ru@gmail.com)
+secure.medibank.com.au
+mymyki.com.au
+qkr
+stratfor.com
+Mycard
+thenounproject.com
+soundcloud.com
+apple id (olga)
+OnePass mobile
+coles.com.au
+sportingbet.com.au
+netflix.com
+houzz.com
+Hugging Face
+bolt.cd
+duckduckgo
+reg.taobao.com
+crazydomains.com.au
+TrueClassic
+inkjetwholesale.com.au
+Resultshq
+slack.com
+go.bigpond.com
+jsfiddle.net
+propertyvalue.com.au
+Nebula
+tradingservices.zecco.com
+dinolingo.com
+Spaceship
+secure.lonelyplanet.com
+privateinternetaccess.com
+REST super annuation
+money.loans.com.au
+Apple ID - Pavel
+E-marketpro fundpass
+portal.80legs.com
+wilsonparking.com.au
+www.hoyts.com.au (vegitto.ru@gmail.com)
+quickconnect.to
+Bsky
+subaru.com
+chefsteps.com
+Medibank
+deviantart.com
+OptusSports
+hipages.com.au
+egghead.io
+us-east-1.signin.aws.amazon.com (anton)
+HeiGIT
+codeschool.com
+accounts.google.com
+onthehouse.com.au
+Doordash
+Drupal Forums
+blind
+launchpad.37signals.com
+console.aws.amazon.com (anton)
+xvid
+bitbucket.org
+readability.com
+CDJapan
+pinterest.com
+velocityrewards.com.au
+Qkrschool
+zx-10r.net
+hoyts.com.au
+evernote.com
+athleticgreens.com
+ticketmaster.com.au
+hbr.org
+Alipay
+sharespost.com
+pingdom.com
+signin.aws.amazon.com (anton)
+my.1password.com (babushkin.anton@gmail.com)
+masterclass.com
+gravatar
+1password block
+gitlab.com
+AussieBroadband
+budgetdirect.com.au
+wordpress.com
+Tokyo Disney Resort
+typekit.com
+morningstar.com.au
+wordpress.com
+instagram.com
+Rabbit
+Discordapp
+github.com (ababushkin)
+7plus
+strengths.gallup.com
+Blink
+gumtree.com.au
+E-marketpro
+pluralsight.com
+Stacksports
+secure3.store.apple.com (vegitto.ru@gmail.com)
+mymyki.com.au
+treeline.io
+sea.battle.net
+telstra.com
+Groupon
+virginaustralia.com
+flatmates.com.au
+paypal secondary
+ozbargain.com.au
+meteor.com
+Firefox Sync
+WorkDay (Adyen)
+Nine
+Snapchat
+news.ycombinator.com
+Michelin
+rhodesbeckett.com.au
+Cellartracker
+rollbar.com
+retailmenot.com
+Villagecinemas
+member.carsales.com.au
+ghost.org
+lichess.org
+accounts.apigee.com
+strikingly.com
+lasttix.com.au
+United Airlines
+https://ok.ru [ANTON]
+mail - babushkin.anton
+moneycenter.yodlee.com
+Dribl
+qsschool [Alyssa]
+Login
+Bluethumb
+Csair - Anton
+Interactivebrokers
+AMP
+KrisFlyer [ANTON]
+KrisFlyer [Xenia]
+Gameday
+Andrei AppleID
+GlenEira eNotices
+Coinhako
+Iclasspro
+Qkrschool
+Trip
+ACER
+KrisFlyer [ANDREI]
+my.gov.au [Xenia]
+Compass
+dribl
+AAS
+dropbox.com (Olga)
+Andrei Nintendo
+zecco.com
+https://www.gleneirafc.com.au
+kinderloop.com
+XMeye
+singaporeair.com [PAVEL]
+accounts.google.com
+Alyssa AppleID
+Suncrop Banking
+Gmail
+singaporeair.com [OLGA]
+investor.tradeking.com
+hikconnect
+qsschool [Andrei]
+SimplyEnergy
+Alyssa Gmail
+SkyBus
+SouthEastWater
+maarts.com.au
+wise
+alyssa nintendo
+Qantas
+PwC
+Csair
+Etrade
+Immi
+Wise
+GlenEira - Anton
+Apple ID (Anton)
+Hillbrook
+Engie
+linkedin.com
+Xero
+twitter.com (antonbabushkin)
+auth.ticketmaster.com (vegitto.ru@gmail.com)
+WorkDay (Block)
+Disa-global
+docker.com
+NAB - Anton
+www.netflix.com (vegitto.ru@gmail.com)
