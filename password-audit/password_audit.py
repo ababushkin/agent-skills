@@ -7,8 +7,10 @@ What it does, given ONE OR MORE CSV exports (1Password, Apple Passwords, or both
   2. Compromised   — checks each password against HaveIBeenPwned (k-anonymity; see below)
   3. Weak          — local heuristics (length, character variety, common lists, sequences, repeats)
   4. Reused        — the same password used across more than one site
-  5. De-duplicated — collapses login/www subdomain variants of one site (same username), drops
-                     EXACT duplicates; flags near-duplicates and likely title-only look-alikes
+  5. De-duplicated — collapses login/www subdomain variants AND known domain renames (e.g.
+                     discordapp.com -> discord.com) into one site; drops EXACT duplicates; merges a
+                     login saved twice under different usernames (same site + same password, keeping
+                     the email username); flags near-duplicates and likely title-only look-alikes
   6. Dead sites    — (opt-in --check-dead) flags accounts whose website is gone, to delete
 
 Local-network credentials (routers, NAS, etc. on 192.168.x / 10.x / *.local) are KEPT but EXEMPT
@@ -16,7 +18,8 @@ from the compromised/weak checks — those passwords aren't meaningfully "breach
 
 Outputs:
   report.md    a ranked, human-readable report. NEVER contains plaintext passwords.
-  cleaned.csv  Apple Passwords import format, with exact duplicates removed.
+  cleaned.csv  Apple Passwords import format, with exact duplicates removed. Each Title is
+               normalized to a consistent "domain (username)" (title-only entries keep their name).
 
 Security model:
   - Your passwords NEVER leave this machine. The only password-derived network call is the
@@ -41,6 +44,7 @@ import argparse
 import csv
 import hashlib
 import ipaddress
+import json
 import re
 import socket
 import ssl
@@ -138,15 +142,54 @@ registration idp oauth openid
 """.split())
 
 
-def dedup_host(host):
-    """Strip leading generic subdomain labels so e.g. signin.ebay.com.au -> ebay.com.au.
-    Stops at 2 labels so it can never collapse a host down to its public suffix."""
-    if not host:
-        return ""
+# A well-known domain rename (old registrable domain -> the current one) is treated as ONE site.
+# Sourced from Apple's password-manager-resources (the data behind iCloud Keychain); see
+# load_domain_aliases() for which part of that file we use and why.
+ALIASES_FILE = Path(__file__).with_name("shared-credentials.json")
+
+
+def _strip_generic_labels(host):
+    """Drop leading generic subdomain labels, stopping at 2 labels so we never reach a public suffix."""
     labels = host.split(".")
     while len(labels) > 2 and labels[0] in GENERIC_SUBDOMAINS:
         labels.pop(0)
     return ".".join(labels)
+
+
+def load_domain_aliases(path=ALIASES_FILE):
+    """Build {old_domain: canonical_domain} from Apple's shared-credentials.json, using ONLY the
+    directional 'from'->'to' renames (domains that were retired in favour of another). The file's
+    broader 'shared' equivalence groups are intentionally ignored, so genuinely distinct products
+    that merely share a credential backend (e.g. Hulu/Disney, Threads/Instagram) are never merged.
+    Keys are stripped of generic subdomain labels so they match what dedup_host() looks up (some
+    'from' domains carry a www./login. prefix). Missing/unreadable file -> {} (aliasing no-ops)."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    aliases = {}
+    for group in data:
+        if not isinstance(group, dict) or "from" not in group or "to" not in group:
+            continue
+        to = group["to"]
+        canonical = to[0] if isinstance(to, list) else to  # 'to' is sometimes a list of domains
+        for old in group["from"]:
+            aliases[_strip_generic_labels(old)] = canonical
+    return aliases
+
+
+DOMAIN_ALIASES = load_domain_aliases()
+
+
+def dedup_host(host):
+    """Collapse a host to its dedup key: strip generic subdomain labels (signin.ebay.com.au ->
+    ebay.com.au), then canonicalise a known rename (discordapp.com -> discord.com). The rename
+    target can itself carry a generic prefix (login.seek.com), so strip once more after."""
+    if not host:
+        return ""
+    host = _strip_generic_labels(host)
+    host = DOMAIN_ALIASES.get(host, host)
+    return _strip_generic_labels(host)
 
 
 def is_local(url_host):
@@ -351,32 +394,49 @@ def find_reuse(entries):
 
 def dedup(entries):
     """
-    Split entries into (kept, exact_dupes_dropped, near_dupes).
-      exact dupe  = same (site, username, password) as an earlier kept entry
-      near dupe   = same (site, username) but DIFFERENT password (credential updated)
-    `site` collapses login/www subdomain variants, so signin.ebay.com.au and
-    www.ebay.com.au for the same user are treated as one site.
+    Split entries into (kept, exact_dupes_dropped, near_dupes, alias_merged).
+      exact dupe   = same (site, username, password) as an earlier kept entry        -> dropped
+      alias merge  = same (site, password) but a DIFFERENT username (one login saved  -> merged
+                     under two usernames). Keep the email-style username, drop the rest.
+      near dupe    = same (site, username) but DIFFERENT password (credential updated) -> kept, flagged
+    `site` collapses login/www subdomain variants and known domain renames, so signin.ebay.com.au
+    and www.ebay.com.au for the same user are treated as one site.
     Order is preserved; the first occurrence of each exact key is kept.
+    `alias_merged` is a list of (dropped_entry, kept_entry) pairs for the report.
     """
-    seen_exact = set()
-    by_identity = defaultdict(set)  # (site, username) -> set of passwords seen
-    kept, dropped = [], []
+    # Pass 1 — drop exact (site, username, password) duplicates, preserving order.
+    seen_exact, survivors, dropped = set(), [], []
     for e in entries:
-        ident = (e["site"], e["username"].lower())
         exact = (e["site"], e["username"].lower(), e["password"])
         if exact in seen_exact:
             dropped.append(e)
             continue
         seen_exact.add(exact)
-        by_identity[ident].add(e["password"])
-        kept.append(e)
-    near = [
-        (ident, count)
-        for ident, count in ((i, len(pws)) for i, pws in by_identity.items())
-        if count > 1
-    ]
+        survivors.append(e)
+
+    # Pass 2 — same (site, password) but different username -> one credential saved twice.
+    # Keep the email-style username (else the first seen); drop the rest, recording the merge.
+    by_sp = defaultdict(list)  # (site, password) -> entries, in order
+    for e in survivors:
+        by_sp[(e["site"], e["password"])].append(e)
+    alias_merged, alias_losers = [], set()  # [(loser, winner)], {id(loser)}
+    for group in by_sp.values():
+        if len({g["username"].lower() for g in group}) > 1:
+            winner = next((g for g in group if "@" in g["username"]), group[0])
+            for g in group:
+                if g is not winner:
+                    alias_merged.append((g, winner))
+                    alias_losers.add(id(g))
+    kept = [e for e in survivors if id(e) not in alias_losers]
+
+    # Near dupes — same (site, username) but more than one password. Computed over survivors;
+    # alias losers have a different username so they never affect a (site, username) bucket.
+    by_identity = defaultdict(set)  # (site, username) -> set of passwords seen
+    for e in survivors:
+        by_identity[(e["site"], e["username"].lower())].add(e["password"])
+    near = [(ident, len(pws)) for ident, pws in by_identity.items() if len(pws) > 1]
     near.sort(key=lambda x: x[1], reverse=True)
-    return kept, dropped, near
+    return kept, dropped, near, alias_merged
 
 
 def normalize_title(title):
@@ -461,16 +521,22 @@ def check_dead(entries, enabled, offline):
 
 # ---- Reporting ---------------------------------------------------------------------------------
 
+def display_name(entry):
+    """Consistent entry title: collapsed-domain (username).
+    Drops the parens when there's no username; for a title-only entry (no URL)
+    keeps its original human title, since there's no host to derive a domain from."""
+    user = entry["username"]
+    base = entry["site"] if entry["url_host"] else (entry["title"] or entry["site"])
+    return f"{base} ({user})" if user else base
+
+
 def label(entry):
     """Identify an entry for the report WITHOUT revealing its password."""
-    title = entry["title"] or entry["domain"] or "(untitled)"
-    user = entry["username"] or "(no username)"
-    site = f" — {entry['domain']}" if entry["domain"] and entry["domain"] != title.lower() else ""
-    return f"{title}{site} · {user}"
+    return display_name(entry) or "(untitled)"
 
 
 def write_report(path, entries, skipped, compromised_checked, reuse_groups, dropped, near,
-                 offline, sources, dead, dead_enabled, title_dupes):
+                 offline, sources, dead, dead_enabled, title_dupes, alias_merged):
     compromised = sorted(
         (e for e in entries if e.get("pwned_count")),
         key=lambda e: e["pwned_count"], reverse=True,
@@ -554,6 +620,20 @@ def write_report(path, entries, skipped, compromised_checked, reuse_groups, drop
         lines.append("_None found._")
     lines.append("")
 
+    lines.append("## 🔀 Merged — same password, different username\n")
+    if alias_merged:
+        lines.append("These shared a site AND a password but had different usernames, so I treated "
+                     "them as one login and kept the email-style username. Skim them — if any is "
+                     "actually a separate account, re-add it.\n")
+        for loser, winner in alias_merged:
+            site = winner["site"] or "(no domain)"
+            kept_user = winner["username"] or "(no username)"
+            lost_user = loser["username"] or "(no username)"
+            lines.append(f"- {site} — kept `{kept_user}`, dropped `{lost_user}`")
+    else:
+        lines.append("_None found._")
+    lines.append("")
+
     lines.append("## 🔗 Possible duplicates — review\n")
     if title_dupes:
         lines.append("Title-only entries (no URL — typically from Apple Passwords) that look like "
@@ -601,7 +681,7 @@ def write_cleaned_csv(path, kept):
         writer = csv.writer(fh)
         writer.writerow(APPLE_HEADER)
         for e in kept:
-            writer.writerow([e["title"], e["url"], e["username"], e["password"], e["notes"], e["otp"]])
+            writer.writerow([display_name(e), e["url"], e["username"], e["password"], e["notes"], e["otp"]])
 
 
 def main(argv=None):
@@ -636,13 +716,13 @@ def main(argv=None):
     compromised_checked = check_compromised(entries, args.offline)
     dead = check_dead(entries, args.check_dead, args.offline)
     reuse_groups = find_reuse(entries)
-    kept, dropped, near = dedup(entries)
+    kept, dropped, near, alias_merged = dedup(entries)
     title_dupes = find_title_dupes(entries)
 
     report_path = out_dir / "report.md"
     cleaned_path = out_dir / "cleaned.csv"
     write_report(report_path, entries, skipped, compromised_checked, reuse_groups, dropped, near,
-                 args.offline, sources, dead, args.check_dead, title_dupes)
+                 args.offline, sources, dead, args.check_dead, title_dupes, alias_merged)
     write_cleaned_csv(cleaned_path, kept)
 
     merged = f" from {len(sources)} exports" if len(sources) > 1 else ""

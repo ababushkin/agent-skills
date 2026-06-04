@@ -22,11 +22,15 @@ the one-shot consolidated report and the cross-vault de-duplication Apple doesn'
 4. **Reused** — the same password used across more than one site.
 5. **De-duplicated** — collapses login/`www` subdomain variants of one site
    (`signin.ebay.com.au`, `www.ebay.com.au`, `accounts.ebay.com.au` → one `ebay.com.au`)
-   so same-site, same-username, same-password rows merge. Drops exact duplicates from
-   the output; flags *near*-duplicates (same site + username, different password) for
-   you to review rather than guessing which is current. Title-only entries with no URL
-   (e.g. a bare `Sonos` from Apple that likely matches `login.sonos.com`) are **flagged
-   for manual review, never auto-dropped** — there's no URL or username to merge on safely.
+   **and known domain renames** (`discordapp.com` → `discord.com`, `twitter.com` → `x.com`)
+   so same-site, same-username, same-password rows merge. Drops exact duplicates from the
+   output. Also **merges a login saved twice under different usernames** (same site + same
+   password — e.g. a handle and an email) into one entry, keeping the email-style username and
+   listing every such merge in the report so you can undo it. Flags *near*-duplicates (same site
+   + username, different password) for you to review rather than guessing which is current.
+   Title-only entries with no URL (e.g. a bare `Sonos` from Apple that likely matches
+   `login.sonos.com`) are **flagged for manual review, never auto-dropped** — there's no URL or
+   username to merge on safely.
 6. **Dead sites** *(opt-in)* — flags accounts whose website looks gone so you can
    delete them.
 
@@ -66,8 +70,11 @@ python3 password_audit.py 1password.csv apple.csv --out-dir ~/Desktop --check-de
   passwords**; entries are identified by title / URL / username only.
 - **`cleaned.csv`** — Apple Passwords import format
   (`Title,URL,Username,Password,Notes,OTPAuth`) with exact duplicates removed.
-  Weak/compromised/reused/dead/LAN entries are **kept** — you still need those
-  accounts; the report tells you what to rotate or delete after importing.
+  Each `Title` is rewritten to a consistent `domain (username)` (e.g.
+  `ebay.com.au (you@example.com)`) so the imported vault reads cleanly — login/`www`
+  subdomain variants all render as the same short domain, and entries with no URL keep
+  their original name. Weak/compromised/reused/dead/LAN entries are **kept** — you still
+  need those accounts; the report tells you what to rotate or delete after importing.
 
 ## Security model
 
@@ -86,6 +93,22 @@ python3 password_audit.py 1password.csv apple.csv --out-dir ~/Desktop --check-de
 - **`cleaned.csv` does contain passwords** — it's the import file. After you import
   it, delete it, and delete the original CSV exports too. (macOS SSDs can't be
   reliably secure-erased, so a normal delete is the practical step, not a guarantee.)
+
+## Data sources
+
+The domain-rename map (`discordapp.com` → `discord.com`, etc.) comes from Apple's
+[`password-manager-resources`](https://github.com/apple/password-manager-resources) —
+`quirks/shared-credentials.json`, the same data behind iCloud Keychain (MIT-licensed). A snapshot is
+**vendored** as `shared-credentials.json` (commit `6857f10`, 2026-05-21) so dedup stays fully offline —
+nothing is fetched at runtime. Only the directional `from`→`to` renames are used; the file's broader
+"shared credential backend" groups are deliberately ignored, so distinct products that merely share a
+login backend (Hulu/Disney, Threads/Instagram) are never merged. Apple's MIT notice is kept in
+`shared-credentials.LICENSE`. To refresh the snapshot:
+
+```bash
+gh api repos/apple/password-manager-resources/contents/quirks/shared-credentials.json \
+  --jq .content | base64 -d > shared-credentials.json
+```
 
 ## Requirements
 

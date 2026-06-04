@@ -16,6 +16,7 @@ Run:
 from __future__ import annotations
 
 import csv
+import json
 import sys
 import tempfile
 import unittest
@@ -24,11 +25,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+import password_audit  # noqa: E402  (module handle for patching DOMAIN_ALIASES in tests)
 from password_audit import (  # noqa: E402
     dedup,
     dedup_host,
+    display_name,
     find_reuse,
     find_title_dupes,
+    load_domain_aliases,
     load_rows,
 )
 
@@ -82,7 +86,7 @@ class SubdomainCollapse(unittest.TestCase):
             ("Shopmart www", "https://www.shopmart.com.au/", "user_a", "Sh4r3d!Pw99a"),
             ("Shopmart accounts", "https://accounts.shopmart.com.au/", "user_a", "Sh4r3d!Pw99a"),
         ])
-        kept, dropped, near = dedup(entries)
+        kept, dropped, near, _ = dedup(entries)
         self.assertEqual(len(kept), 1)
         self.assertEqual(len(dropped), 2)
         self.assertEqual(near, [])
@@ -94,7 +98,7 @@ class SubdomainCollapse(unittest.TestCase):
             ("Taskhub id", "https://id.taskhub.com/", "user_b", "T4sk!Pw99b"),
             ("Taskhub www", "https://www.taskhub.com/", "user_b", "T4sk!Pw99b"),
         ])
-        kept, dropped, _ = dedup(entries)
+        kept, dropped, _, _ = dedup(entries)
         self.assertEqual(len(kept), 1)
         self.assertEqual(len(dropped), 1)
 
@@ -107,7 +111,7 @@ class StaysSeparate(unittest.TestCase):
             ("Shopmart A", "https://signin.shopmart.com.au/login", "user_a", "Aaa!Pw111"),
             ("Shopmart C", "https://signin.shopmart.com.au/login", "user_c@example.com", "Ccc!Pw222"),
         ])
-        kept, dropped, near = dedup(entries)
+        kept, dropped, near, _ = dedup(entries)
         self.assertEqual(len(kept), 2)
         self.assertEqual(dropped, [])
         self.assertEqual(near, [])
@@ -117,7 +121,7 @@ class StaysSeparate(unittest.TestCase):
             ("Shopmart new", "https://signin.shopmart.com.au/login", "user_a", "Sh4r3d!Pw99a"),
             ("Shopmart old", "https://www.shopmart.com.au/", "user_a", "0ldPw!2019aa"),
         ])
-        kept, dropped, near = dedup(entries)
+        kept, dropped, near, _ = dedup(entries)
         # Both kept — we never guess which password is current.
         self.assertEqual(len(kept), 2)
         self.assertEqual(dropped, [])
@@ -128,7 +132,7 @@ class StaysSeparate(unittest.TestCase):
             ("Tenant one", "https://alphaco.authportal.com/", "user_a@example.com", "One!Pw11a"),
             ("Tenant two", "https://betaco.authportal.com/", "user_a@example.com", "Two!Pw22b"),
         ])
-        kept, dropped, near = dedup(entries)
+        kept, dropped, near, _ = dedup(entries)
         self.assertEqual(len(kept), 2)
         self.assertEqual(dropped, [])
         self.assertEqual(near, [])
@@ -168,7 +172,7 @@ class TitleOnlyDupes(unittest.TestCase):
         self.assertEqual(title_entry["title"], "Soundbox")
         self.assertEqual(sites, ["soundbox.com"])
         # Flagged only — never removed from the kept set.
-        kept, dropped, _ = dedup(entries)
+        kept, dropped, _, _ = dedup(entries)
         self.assertEqual(len(kept), 2)
         self.assertEqual(dropped, [])
 
@@ -189,6 +193,48 @@ class TitleOnlyDupes(unittest.TestCase):
         self.assertEqual(find_title_dupes(entries), [])
 
 
+class DisplayName(unittest.TestCase):
+    """The consistent 'site (username)' title written to cleaned.csv and the report."""
+
+    def _one(self, title, url, user, pw="Disp!Pw99a"):
+        entries, _ = make_entries([(title, url, user, pw)])
+        return display_name(entries[0])
+
+    def test_url_with_email_username(self):
+        self.assertEqual(
+            self._one("Shopmart", "https://www.shopmart.com.au/", "user_a@example.com"),
+            "shopmart.com.au (user_a@example.com)",
+        )
+
+    def test_subdomain_collapses_into_the_name(self):
+        self.assertEqual(
+            self._one("Shopmart signin", "https://signin.shopmart.com.au/", "user_a"),
+            "shopmart.com.au (user_a)",
+        )
+
+    def test_www_prefix_collapses(self):
+        self.assertEqual(
+            self._one("Taskhub", "https://www.taskhub.com/", "user_b"),
+            "taskhub.com (user_b)",
+        )
+
+    def test_no_username_drops_the_parens(self):
+        self.assertEqual(
+            self._one("Taskhub", "https://www.taskhub.com/", ""),
+            "taskhub.com",
+        )
+
+    def test_title_only_entry_keeps_original_human_title(self):
+        # No URL to derive a domain from, no username -> keep the name verbatim.
+        self.assertEqual(self._one("Soundbox", "", ""), "Soundbox")
+
+    def test_lan_ip_renders_consistently(self):
+        self.assertEqual(
+            self._one("Router", "http://10.0.0.1/", "admin"),
+            "10.0.0.1 (admin)",
+        )
+
+
 class SkippedRows(unittest.TestCase):
     """Empty-password rows (secure notes etc.) are skipped, not entries."""
 
@@ -199,6 +245,99 @@ class SkippedRows(unittest.TestCase):
         ])
         self.assertEqual(len(entries), 1)
         self.assertEqual(skipped, 1)
+
+
+class DomainAliases(unittest.TestCase):
+    """Known domain renames (Apple's shared-credentials.json 'from'->'to') collapse to one site."""
+
+    def setUp(self):
+        self._saved = password_audit.DOMAIN_ALIASES
+
+    def tearDown(self):
+        password_audit.DOMAIN_ALIASES = self._saved
+
+    def test_load_uses_renames_only_and_ignores_shared_groups(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "sc.json"
+            path.write_text(json.dumps([
+                {"from": ["oldbrand.example"], "to": ["newbrand.example"]},
+                {"from": ["alt.example"], "to": ["canonical.example", "second.example"]},
+                {"shared": ["hulu.example", "disney.example"]},
+            ]), encoding="utf-8")
+            aliases = load_domain_aliases(path)
+        self.assertEqual(aliases.get("oldbrand.example"), "newbrand.example")
+        self.assertEqual(aliases.get("alt.example"), "canonical.example")  # first of a list 'to'
+        self.assertNotIn("hulu.example", aliases)   # 'shared' equivalence groups are ignored
+        self.assertNotIn("disney.example", aliases)
+
+    def test_missing_file_yields_empty_map(self):
+        self.assertEqual(load_domain_aliases(Path("/no/such/aliases.json")), {})
+
+    def test_dedup_host_applies_injected_rename(self):
+        password_audit.DOMAIN_ALIASES = {"discordapp.com": "discord.com"}
+        self.assertEqual(dedup_host("discordapp.com"), "discord.com")
+        self.assertEqual(dedup_host("www.discordapp.com"), "discord.com")
+
+    def test_dedup_host_recollapses_subdomained_canonical(self):
+        # A rename target can carry a generic prefix; the result is stripped again.
+        password_audit.DOMAIN_ALIASES = {"seek.com.au": "login.seek.com"}
+        self.assertEqual(dedup_host("seek.com.au"), "seek.com")
+
+    def test_alias_collapses_two_registrable_domains_in_dedup(self):
+        password_audit.DOMAIN_ALIASES = {"discordapp.com": "discord.com"}
+        entries, _ = make_entries([
+            ("Discord", "https://discord.com/", "user_a@example.com", "D!scord99a"),
+            ("Discord old", "https://discordapp.com/", "user_a@example.com", "D!scord99a"),
+        ])
+        kept, dropped, _, _ = dedup(entries)
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(len(dropped), 1)
+
+    def test_vendored_snapshot_maps_discord(self):
+        # Smoke check that the committed shared-credentials.json loads and carries the discord
+        # rename — guards against a broken or empty vendored file.
+        self.assertEqual(load_domain_aliases().get("discordapp.com"), "discord.com")
+
+
+class AliasUsernameMerge(unittest.TestCase):
+    """Same site + same password but different usernames -> one credential (email username kept)."""
+
+    def test_same_site_password_different_user_merges_keeping_email(self):
+        # Handle listed first, email second — the email must still win.
+        entries, _ = make_entries([
+            ("Bikes handle", "https://www.bikeshop.example/", "rider_handle", "B!keP4ss77z"),
+            ("Bikes email", "https://www.bikeshop.example/", "rider@example.com", "B!keP4ss77z"),
+        ])
+        kept, dropped, near, alias_merged = dedup(entries)
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(dropped, [])
+        self.assertEqual(near, [])
+        self.assertEqual(len(alias_merged), 1)
+        loser, winner = alias_merged[0]
+        self.assertEqual(winner["username"], "rider@example.com")
+        self.assertEqual(loser["username"], "rider_handle")
+        self.assertEqual(kept[0]["username"], "rider@example.com")
+
+    def test_no_email_keeps_first_seen(self):
+        entries, _ = make_entries([
+            ("Forum one", "https://www.forum.example/", "handle_one", "F0rum!Pw22a"),
+            ("Forum two", "https://www.forum.example/", "handle_two", "F0rum!Pw22a"),
+        ])
+        kept, dropped, near, alias_merged = dedup(entries)
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(len(alias_merged), 1)
+        self.assertEqual(kept[0]["username"], "handle_one")  # first seen wins absent an email
+
+    def test_different_passwords_never_merge(self):
+        # Two genuinely separate accounts on one site with DIFFERENT passwords must both survive.
+        entries, _ = make_entries([
+            ("Acct A", "https://www.shop.example/", "alice@example.com", "Al!cePw11a"),
+            ("Acct B", "https://www.shop.example/", "bob@example.com", "B0bPw!22bb"),
+        ])
+        kept, dropped, near, alias_merged = dedup(entries)
+        self.assertEqual(len(kept), 2)
+        self.assertEqual(alias_merged, [])
+        self.assertEqual(dropped, [])
 
 
 if __name__ == "__main__":
