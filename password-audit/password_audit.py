@@ -7,10 +7,12 @@ What it does, given ONE OR MORE CSV exports (1Password, Apple Passwords, or both
   2. Compromised   — checks each password against HaveIBeenPwned (k-anonymity; see below)
   3. Weak          — local heuristics (length, character variety, common lists, sequences, repeats)
   4. Reused        — the same password used across more than one site
-  5. De-duplicated — collapses login/www subdomain variants AND known domain renames (e.g.
-                     discordapp.com -> discord.com) into one site; drops EXACT duplicates; merges a
-                     login saved twice under different usernames (same site + same password, keeping
-                     the email username); flags near-duplicates and likely title-only look-alikes
+  5. De-duplicated — collapses every subdomain to its registrable domain via the Public Suffix List
+                     (au.linkedin.com -> linkedin.com) AND known domain renames (discordapp.com ->
+                     discord.com) into one site, while multi-tenant backends (b2clogin.com etc.) stay
+                     separate; drops EXACT duplicates; merges a login saved twice under different
+                     usernames (same site + same password, keeping the email username); flags
+                     near-duplicates and likely title-only look-alikes
   6. Dead sites    — (opt-in --check-dead) flags accounts whose website is gone, to delete
 
 Local-network credentials (routers, NAS, etc. on 192.168.x / 10.x / *.local) are KEPT but EXEMPT
@@ -132,14 +134,77 @@ def url_host_of(url):
     return domain_of(url, "")
 
 
-# Generic, non-identity subdomain labels — stripped from the FRONT of a host so that
-# login/www/auth variants of the same site collapse to one dedup key. Conservative on
-# purpose: we only strip well-known prefixes, never enough to merge two different sites.
-GENERIC_SUBDOMAINS = frozenset("""
-www www2 www3 m mobile signin sign-in signon login logon log-in auth auth2 auth3 sso
-account accounts id identity secure secure2 secure3 my app apps web portal register
-registration idp oauth openid
-""".split())
+# A host's dedup key is its registrable domain (eTLD+1), computed from the vendored Public Suffix
+# List: signin.ebay.com.au -> ebay.com.au, au.linkedin.com -> linkedin.com. This collapses every
+# subdomain variant of a site, while multi-part TLDs (amazon.com.au stays distinct from amazon.com)
+# and multi-tenant backends (the PSL's private section) are respected.
+PSL_FILE = Path(__file__).with_name("public_suffix_list.dat")
+
+# Multi-tenant login backends the PSL hasn't (yet) marked private. Treated as public suffixes so
+# that different tenants (dhvicp.b2clogin.com vs sentosalogin.b2clogin.com) never collapse into one
+# site. Extend this set if you hit another backend the PSL doesn't cover.
+EXTRA_PRIVATE_SUFFIXES = frozenset({
+    "b2clogin.com",     # Azure AD B2C — one tenant per subdomain
+    "onmicrosoft.com",  # Microsoft Entra / Azure tenant domains
+})
+
+
+def load_public_suffixes(path=PSL_FILE):
+    """Parse the Public Suffix List into (rules, exceptions) sets. '//' comments and blank lines are
+    ignored; a leading '!' marks an exception; '*' wildcard labels are kept verbatim. Both the ICANN
+    and PRIVATE sections are used, so multi-tenant backends (github.io, myshopify.com) act as
+    suffixes too. Missing/unreadable file -> empty sets (registrable_domain() then falls back to the
+    last two labels, so dedup still works, just less precisely)."""
+    rules, exceptions = set(), set()
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return rules, exceptions
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("//"):
+            continue
+        rule = line.split()[0]  # the rule is the first token; ignore any trailing comment
+        (exceptions if rule.startswith("!") else rules).add(rule.lstrip("!"))
+    return rules, exceptions
+
+
+PSL_RULES, PSL_EXCEPTIONS = load_public_suffixes()
+
+
+def _public_suffix_labels(labels):
+    """Number of trailing labels of `labels` (a host split on '.') that form its public suffix, per
+    the PSL algorithm: an exception rule wins (its suffix is the rule minus its first label);
+    otherwise the longest matching rule wins (exact, local supplement, or a '*' wildcard); with no
+    match the default is the single rightmost label."""
+    for i in range(len(labels)):
+        if ".".join(labels[i:]) in PSL_EXCEPTIONS:
+            return len(labels) - i - 1
+    best = 1
+    for i in range(len(labels)):
+        exact = ".".join(labels[i:])
+        wild = ".".join(["*"] + labels[i + 1:])
+        if exact in PSL_RULES or exact in EXTRA_PRIVATE_SUFFIXES or wild in PSL_RULES:
+            best = max(best, len(labels) - i)
+    return best
+
+
+def registrable_domain(host):
+    """Reduce a host to its registrable domain, eTLD+1 (au.linkedin.com -> linkedin.com;
+    signin.ebay.com.au -> ebay.com.au; dhvicp.b2clogin.com kept whole). A host that is itself a
+    public suffix, or has no dot, is returned unchanged."""
+    if not host or "." not in host:
+        return host
+    try:
+        ipaddress.ip_address(host)
+        return host  # an IP literal (e.g. a LAN device) is not a domain — leave it whole
+    except ValueError:
+        pass
+    labels = host.split(".")
+    suffix_len = _public_suffix_labels(labels)
+    if len(labels) <= suffix_len:
+        return host
+    return ".".join(labels[len(labels) - suffix_len - 1:])
 
 
 # A well-known domain rename (old registrable domain -> the current one) is treated as ONE site.
@@ -148,20 +213,12 @@ registration idp oauth openid
 ALIASES_FILE = Path(__file__).with_name("shared-credentials.json")
 
 
-def _strip_generic_labels(host):
-    """Drop leading generic subdomain labels, stopping at 2 labels so we never reach a public suffix."""
-    labels = host.split(".")
-    while len(labels) > 2 and labels[0] in GENERIC_SUBDOMAINS:
-        labels.pop(0)
-    return ".".join(labels)
-
-
 def load_domain_aliases(path=ALIASES_FILE):
     """Build {old_domain: canonical_domain} from Apple's shared-credentials.json, using ONLY the
     directional 'from'->'to' renames (domains that were retired in favour of another). The file's
     broader 'shared' equivalence groups are intentionally ignored, so genuinely distinct products
     that merely share a credential backend (e.g. Hulu/Disney, Threads/Instagram) are never merged.
-    Keys are stripped of generic subdomain labels so they match what dedup_host() looks up (some
+    Keys are reduced to their registrable domain so they match what dedup_host() looks up (some
     'from' domains carry a www./login. prefix). Missing/unreadable file -> {} (aliasing no-ops)."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -174,7 +231,7 @@ def load_domain_aliases(path=ALIASES_FILE):
         to = group["to"]
         canonical = to[0] if isinstance(to, list) else to  # 'to' is sometimes a list of domains
         for old in group["from"]:
-            aliases[_strip_generic_labels(old)] = canonical
+            aliases[registrable_domain(old)] = canonical
     return aliases
 
 
@@ -182,14 +239,15 @@ DOMAIN_ALIASES = load_domain_aliases()
 
 
 def dedup_host(host):
-    """Collapse a host to its dedup key: strip generic subdomain labels (signin.ebay.com.au ->
-    ebay.com.au), then canonicalise a known rename (discordapp.com -> discord.com). The rename
-    target can itself carry a generic prefix (login.seek.com), so strip once more after."""
+    """Collapse a host to its dedup key: reduce to the registrable domain (signin.ebay.com.au ->
+    ebay.com.au, au.linkedin.com -> linkedin.com), then canonicalise a known rename (discordapp.com
+    -> discord.com). The rename target can itself carry a subdomain (login.seek.com), so reduce once
+    more after."""
     if not host:
         return ""
-    host = _strip_generic_labels(host)
+    host = registrable_domain(host)
     host = DOMAIN_ALIASES.get(host, host)
-    return _strip_generic_labels(host)
+    return registrable_domain(host)
 
 
 def is_local(url_host):

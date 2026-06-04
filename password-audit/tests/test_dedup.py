@@ -33,7 +33,9 @@ from password_audit import (  # noqa: E402
     find_reuse,
     find_title_dupes,
     load_domain_aliases,
+    load_public_suffixes,
     load_rows,
+    registrable_domain,
 )
 
 
@@ -62,16 +64,29 @@ class DedupHost(unittest.TestCase):
         self.assertEqual(dedup_host("login.mailbox.com"), "mailbox.com")
         self.assertEqual(dedup_host("auth.techstore.com.au"), "techstore.com.au")
 
-    def test_two_label_floor_never_eats_the_suffix(self):
-        # Must never collapse down to a bare public suffix like com.au.
+    def test_never_collapses_to_a_bare_public_suffix(self):
+        # A multi-part TLD must survive whole — never reduce to com.au / net.au.
         self.assertEqual(dedup_host("www.taskhub.com"), "taskhub.com")
         self.assertEqual(dedup_host("taskhub.com"), "taskhub.com")
+        self.assertEqual(dedup_host("shopmart.com.au"), "shopmart.com.au")
+        self.assertEqual(dedup_host("www.shopmart.com.au"), "shopmart.com.au")
+        self.assertEqual(dedup_host("bicycles.net.au"), "bicycles.net.au")
 
-    def test_non_generic_labels_are_kept(self):
-        # Different multi-tenant subdomains / sandboxes are real, distinct sites.
-        self.assertEqual(dedup_host("alphaco.authportal.com"), "alphaco.authportal.com")
-        self.assertEqual(dedup_host("betaco.authportal.com"), "betaco.authportal.com")
-        self.assertEqual(dedup_host("www.sandbox.paywave.com"), "sandbox.paywave.com")
+    def test_brand_subdomains_reduce_to_registrable_domain(self):
+        # Arbitrary (non-generic) brand subdomains now collapse to eTLD+1.
+        self.assertEqual(dedup_host("au.linkedin.com"), "linkedin.com")
+        self.assertEqual(dedup_host("ws.sonos.com"), "sonos.com")
+        self.assertEqual(dedup_host("acm.account.sony.com"), "sony.com")
+        self.assertEqual(dedup_host("sso-v2.crunchyroll.com"), "crunchyroll.com")
+        self.assertEqual(dedup_host("console.aws.amazon.com"), "amazon.com")
+
+    def test_multi_tenant_backend_tenants_are_kept_separate(self):
+        # Different tenants of a multi-tenant backend are real, distinct sites. The PSL's private
+        # section covers most (myshopify.com); EXTRA_PRIVATE_SUFFIXES covers Azure B2C (b2clogin.com).
+        self.assertEqual(dedup_host("shopa.myshopify.com"), "shopa.myshopify.com")
+        self.assertEqual(dedup_host("shopb.myshopify.com"), "shopb.myshopify.com")
+        self.assertEqual(dedup_host("t1.b2clogin.com"), "t1.b2clogin.com")
+        self.assertEqual(dedup_host("t2.b2clogin.com"), "t2.b2clogin.com")
 
     def test_empty_host(self):
         self.assertEqual(dedup_host(""), "")
@@ -102,6 +117,17 @@ class SubdomainCollapse(unittest.TestCase):
         self.assertEqual(len(kept), 1)
         self.assertEqual(len(dropped), 1)
 
+    def test_brand_subdomain_collapses_with_www(self):
+        # A country/brand subdomain and www of the same site, same user + pw -> one entry.
+        entries, _ = make_entries([
+            ("LinkedIn AU", "https://au.linkedin.com/", "user_b@example.com", "L!nk3d99b"),
+            ("LinkedIn", "https://www.linkedin.com/", "user_b@example.com", "L!nk3d99b"),
+        ])
+        kept, dropped, _, _ = dedup(entries)
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(len(dropped), 1)
+        self.assertEqual(kept[0]["site"], "linkedin.com")
+
 
 class StaysSeparate(unittest.TestCase):
     """Cases the collapse must NOT merge."""
@@ -128,14 +154,17 @@ class StaysSeparate(unittest.TestCase):
         self.assertEqual(near, [(("shopmart.com.au", "user_a"), 2)])
 
     def test_different_tenants_not_merged(self):
+        # Two Azure AD B2C tenants share the b2clogin.com backend but are different accounts, even
+        # with the same user and password. EXTRA_PRIVATE_SUFFIXES keeps them apart.
         entries, _ = make_entries([
-            ("Tenant one", "https://alphaco.authportal.com/", "user_a@example.com", "One!Pw11a"),
-            ("Tenant two", "https://betaco.authportal.com/", "user_a@example.com", "Two!Pw22b"),
+            ("Tenant one", "https://dhvicp.b2clogin.com/", "user_a@example.com", "Sh4r3d!Pw11a"),
+            ("Tenant two", "https://sentosalogin.b2clogin.com/", "user_a@example.com", "Sh4r3d!Pw11a"),
         ])
-        kept, dropped, near, _ = dedup(entries)
+        kept, dropped, near, alias_merged = dedup(entries)
         self.assertEqual(len(kept), 2)
         self.assertEqual(dropped, [])
         self.assertEqual(near, [])
+        self.assertEqual(alias_merged, [])
 
 
 class Reuse(unittest.TestCase):
@@ -338,6 +367,78 @@ class AliasUsernameMerge(unittest.TestCase):
         self.assertEqual(len(kept), 2)
         self.assertEqual(alias_merged, [])
         self.assertEqual(dropped, [])
+
+
+class RegistrableDomain(unittest.TestCase):
+    """eTLD+1 reduction via the vendored Public Suffix List."""
+
+    def test_brand_subdomains_collapse(self):
+        self.assertEqual(registrable_domain("au.linkedin.com"), "linkedin.com")
+        self.assertEqual(registrable_domain("ws.sonos.com"), "sonos.com")
+        self.assertEqual(registrable_domain("sso-v2.crunchyroll.com"), "crunchyroll.com")
+        self.assertEqual(registrable_domain("console.aws.amazon.com"), "amazon.com")
+
+    def test_multi_part_tlds_preserved(self):
+        self.assertEqual(registrable_domain("amazon.com.au"), "amazon.com.au")
+        self.assertEqual(registrable_domain("signin.ebay.com.au"), "ebay.com.au")
+        self.assertEqual(registrable_domain("a.b.sentosa.com.sg"), "sentosa.com.sg")
+
+    def test_host_that_is_itself_a_public_suffix_is_unchanged(self):
+        self.assertEqual(registrable_domain("com.au"), "com.au")
+        self.assertEqual(registrable_domain("myshopify.com"), "myshopify.com")
+
+    def test_empty_or_dotless_host_unchanged(self):
+        self.assertEqual(registrable_domain(""), "")
+        self.assertEqual(registrable_domain("localhost"), "localhost")
+
+    def test_ip_literals_are_not_reduced(self):
+        # A LAN IP is not a domain — it must survive whole, not get truncated to its last labels.
+        self.assertEqual(registrable_domain("10.0.0.1"), "10.0.0.1")
+        self.assertEqual(registrable_domain("192.168.1.254"), "192.168.1.254")
+
+
+class PublicSuffixList(unittest.TestCase):
+    """Parsing the PSL file and the empty-file fallback."""
+
+    def test_parses_rules_exceptions_and_ignores_comments(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "psl.dat"
+            path.write_text(
+                "// a comment\n"
+                "\n"
+                "com.example\n"
+                "*.wildcard.example\n"
+                "!exception.wildcard.example  // trailing comment\n",
+                encoding="utf-8",
+            )
+            rules, exceptions = load_public_suffixes(path)
+        self.assertIn("com.example", rules)
+        self.assertIn("*.wildcard.example", rules)
+        self.assertNotIn("// a comment", rules)
+        self.assertEqual(exceptions, {"exception.wildcard.example"})
+
+    def test_missing_file_yields_empty_sets(self):
+        rules, exceptions = load_public_suffixes(Path("/no/such/psl.dat"))
+        self.assertEqual(rules, set())
+        self.assertEqual(exceptions, set())
+
+    def test_missing_psl_falls_back_to_last_two_labels(self):
+        saved_rules, saved_exc = password_audit.PSL_RULES, password_audit.PSL_EXCEPTIONS
+        password_audit.PSL_RULES, password_audit.PSL_EXCEPTIONS = set(), set()
+        try:
+            # No suffix data -> registrable domain is the last two labels (good enough fallback).
+            self.assertEqual(registrable_domain("au.linkedin.com"), "linkedin.com")
+            self.assertEqual(registrable_domain("signin.ebay.com.au"), "com.au")
+        finally:
+            password_audit.PSL_RULES, password_audit.PSL_EXCEPTIONS = saved_rules, saved_exc
+
+    def test_vendored_psl_loads_and_reduces(self):
+        # Smoke check that the committed public_suffix_list.dat is present and sane.
+        rules, _ = load_public_suffixes()
+        self.assertIn("com.au", rules)
+        self.assertIn("myshopify.com", rules)
+        self.assertEqual(registrable_domain("au.linkedin.com"), "linkedin.com")
+        self.assertEqual(registrable_domain("amazon.com.au"), "amazon.com.au")
 
 
 if __name__ == "__main__":

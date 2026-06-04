@@ -1,0 +1,14 @@
+public_suffix_list.dat is a verbatim snapshot of the Mozilla Public Suffix List.
+
+Source:  https://publicsuffix.org/list/public_suffix_list.dat
+Project: https://github.com/publicsuffix/list
+
+The Public Suffix List is licensed under the Mozilla Public License, v. 2.0:
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+It is vendored here (rather than fetched at runtime) so password_audit.py can
+compute registrable domains for de-duplication fully offline. Only the suffix
+rules are read; see load_public_suffixes() in password_audit.py.
