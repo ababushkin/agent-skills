@@ -52,3 +52,11 @@ garage-sale          → print labels and clear whatever's left
 
 The selling skills share a working folder (default `~/Desktop/things-for-sale/`),
 where each item is a subfolder holding its photos and a `listing.md` record.
+
+## Standalone utilities
+
+Not every folder here is a skill. Some are plain scripts you run directly.
+
+| Tool | What it does |
+|------|--------------|
+| **[password-audit](password-audit/)** | A single-file, stdlib-only password cleanup tool for migrating to Apple Passwords. Merges one or more CSV exports (1Password, Apple, or both), de-duplicates across them, flags weak/compromised/reused passwords (compromised via HaveIBeenPwned k-anonymity — passwords never leave the machine), exempts local-network credentials, and optionally flags dead sites. Writes a report plus an import-ready CSV. See [`password-audit/README.md`](password-audit/README.md). |
