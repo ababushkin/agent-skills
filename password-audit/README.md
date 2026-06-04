@@ -19,8 +19,10 @@ Recommendations), so the lasting value here is the one-shot cross-vault de-dupli
    computed from the **Public Suffix List** so multi-part TLDs survive (`amazon.com.au` stays
    distinct from `amazon.com`) and **multi-tenant login backends stay separate** (two
    `*.b2clogin.com` Azure tenants are different accounts, not one). It also applies **known domain
-   renames** (`discordapp.com` → `discord.com`, `twitter.com` → `x.com`) so same-site,
-   same-username, same-password rows merge, and drops exact duplicates from the output. Also
+   renames** (`discordapp.com` → `discord.com`, `twitter.com` → `x.com`) and a small hand-curated
+   set of **same-service brands on different domains** (`skywards.com` → `emirates.com`,
+   `sonyentertainmentnetwork.com` → `sony.com`) so same-site, same-username, same-password rows
+   merge, and drops exact duplicates from the output. Also
    **merges a login saved twice under different usernames** (same site + same password — e.g. a
    handle and an email) into one entry, keeping the email-style username and listing every such
    merge in the report so you can undo it. Flags *near*-duplicates (same site + username, different
@@ -106,6 +108,13 @@ MIT notice is kept in `shared-credentials.LICENSE`. To refresh:
 gh api repos/apple/password-manager-resources/contents/quirks/shared-credentials.json \
   --jq .content | base64 -d > shared-credentials.json
 ```
+
+`SERVICE_ALIASES` in `password_audit.py` is a tiny, **hand-curated** supplement to that rename data —
+a handful of confirmed same-service brands that live on different registrable domains
+(`skywards.com` → `emirates.com`, `sonyentertainmentnetwork.com` → `sony.com`, `live.com` →
+`microsoft.com`, `telstra.com` → `telstra.com.au`). It is in-file, not fetched, and kept deliberately
+small: each entry must be a genuine single account, since merging two domains that are *not* the same
+account would wrongly collapse distinct logins.
 
 ## Requirements
 

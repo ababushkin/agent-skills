@@ -37,6 +37,7 @@ from password_audit import (  # noqa: E402
     load_rows,
     registrable_domain,
 )
+# SERVICE_ALIASES is read through the `password_audit` module handle (above) in ServiceAliases.
 
 
 def make_entries(rows):
@@ -326,6 +327,47 @@ class DomainAliases(unittest.TestCase):
         # Smoke check that the committed shared-credentials.json loads and carries the discord
         # rename — guards against a broken or empty vendored file.
         self.assertEqual(load_domain_aliases().get("discordapp.com"), "discord.com")
+
+
+class ServiceAliases(unittest.TestCase):
+    """The hand-curated SERVICE_ALIASES supplement (real committed constant, no patching):
+    same-service brands on different registrable domains collapse to one site."""
+
+    def test_dedup_host_resolves_each_pair(self):
+        self.assertEqual(dedup_host("skywards.com"), "emirates.com")
+        self.assertEqual(dedup_host("www.skywards.com"), "emirates.com")
+        self.assertEqual(dedup_host("sonyentertainmentnetwork.com"), "sony.com")
+        self.assertEqual(dedup_host("id.sonyentertainmentnetwork.com"), "sony.com")
+        self.assertEqual(dedup_host("live.com"), "microsoft.com")
+        self.assertEqual(dedup_host("login.live.com"), "microsoft.com")
+        self.assertEqual(dedup_host("telstra.com"), "telstra.com.au")
+
+    def test_targets_are_terminal_no_chaining(self):
+        # dedup_host applies exactly one alias lookup, so no value may also be a key.
+        keys = set(password_audit.SERVICE_ALIASES)
+        for target in password_audit.SERVICE_ALIASES.values():
+            self.assertNotIn(target, keys)
+
+    def test_same_user_same_password_collapses_to_one(self):
+        entries, _ = make_entries([
+            ("Sony", "https://my.account.sony.com/", "user_a@example.com", "S0ny!Pw99a"),
+            ("PSN", "https://id.sonyentertainmentnetwork.com/", "user_a@example.com", "S0ny!Pw99a"),
+        ])
+        kept, dropped, near, _ = dedup(entries)
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(len(dropped), 1)
+        self.assertEqual(kept[0]["site"], "sony.com")
+
+    def test_same_user_different_password_surfaces_as_near_dup(self):
+        # Linked but with two different stored passwords -> kept and flagged, never silently dropped.
+        entries, _ = make_entries([
+            ("Emirates", "https://www.emirates.com/", "294320386", "Em!rates99a"),
+            ("Skywards", "https://www.skywards.com/", "294320386", "0ldSky!2019a"),
+        ])
+        kept, dropped, near, _ = dedup(entries)
+        self.assertEqual(len(kept), 2)
+        self.assertEqual(dropped, [])
+        self.assertEqual(near, [(("emirates.com", "294320386"), 2)])
 
 
 class AliasUsernameMerge(unittest.TestCase):

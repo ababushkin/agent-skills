@@ -5,9 +5,11 @@ password_audit.py — local, fully offline de-duplicator for a 1Password -> Appl
 What it does, given ONE OR MORE CSV exports (1Password, Apple Passwords, or both):
   1. Merge         — combines every export and de-duplicates ACROSS them into one clean list
   2. De-duplicated — collapses every subdomain to its registrable domain via the Public Suffix List
-                     (au.linkedin.com -> linkedin.com) AND known domain renames (discordapp.com ->
-                     discord.com) into one site, while multi-tenant backends (b2clogin.com etc.) stay
-                     separate; drops EXACT duplicates; merges a login saved twice under different
+                     (au.linkedin.com -> linkedin.com), known domain renames (discordapp.com ->
+                     discord.com), AND a few same-service brands on different domains
+                     (sonyentertainmentnetwork.com -> sony.com) into one site, while multi-tenant
+                     backends (b2clogin.com etc.) stay separate; drops EXACT duplicates; merges a
+                     login saved twice under different
                      usernames (same site + same password, keeping the email username); flags
                      near-duplicates and likely title-only look-alikes
   3. Reused        — reports the same password used across more than one site, so you can see what to
@@ -192,7 +194,21 @@ def load_domain_aliases(path=ALIASES_FILE):
     return aliases
 
 
-DOMAIN_ALIASES = load_domain_aliases()
+# Same-service brand pairs that live on DIFFERENT registrable domains, so neither the PSL nor a
+# domain *rename* links them — yet they are one account (one loyalty programme / identity provider).
+# Hand-curated and kept deliberately tiny: each entry must be a genuine single account, not merely a
+# shared login backend (we already drop Apple's broad "shared" groups for that reason; see
+# load_domain_aliases). old registrable domain -> canonical registrable domain. Targets must NOT
+# themselves be keys here (dedup_host applies one alias lookup, not a chain).
+SERVICE_ALIASES = {
+    "skywards.com": "emirates.com",                 # Emirates Skywards loyalty account
+    "sonyentertainmentnetwork.com": "sony.com",     # Sony Entertainment Network / PSN == Sony account
+    "live.com": "microsoft.com",                    # one Microsoft identity
+    "telstra.com": "telstra.com.au",                # same telco; canonical is the AU entity
+}
+
+# Local supplement overrides the file (so our hand-picked canonical wins on any conflict).
+DOMAIN_ALIASES = {**load_domain_aliases(), **SERVICE_ALIASES}
 
 
 def dedup_host(host):
