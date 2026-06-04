@@ -1,0 +1,50 @@
+even with the laetst work we did on domain mapping i still see duplicates
+
+they all have the same password
+
+amazon.com (vegitto.ru@gmail.com)
+https://www.amazon.com/
+vegitto.ru@gmail.com
+amazon.com.au (vegitto.ru@gmail.com)
+https://amazon.com.au/
+vegitto.ru@gmail.com
+aws.amazon.com (vegitto.ru@gmail.com)
+https://signin.aws.amazon.com/
+vegitto.ru@gmail.com
+smile.amazon.com (vegitto.ru@gmail.com)
+https://smile.amazon.com/
+vegitto.ru@gmail.com
+
+acm.account.sony.com (vegitto.ru@gmail.com)
+sony.com (vegitto.ru@gmail.com)
+
+Sonos (vegitto.ru@gmail.com)
+sonos.com (vegitto.ru@gmail.com)
+ws.sonos.com (vegitto.ru@gmail.com)
+
+au.linkedin.com (babushkin.anton@gmail.com)
+https://au.linkedin.com/
+linkedin.com (babushkin.anton@gmail.com)
+https://www.linkedin.com/
+
+aws.amazon.com (anton)
+console.aws.amazon.com (anton)
+us-east-1.signin.aws.amazon.com (anton)
+
+sentosa.com.sg (vegitto.ru@gmail.com)
+sentosalogin.b2clogin.com (vegitto.ru@gmail.com)
+
+dhvicp.b2clogin.com (babushkin.anton@gmail.com)
+https://dhvicp.b2clogin.com/
+sentosalogin.b2clogin.com (babushkin.anton@gmail.com)
+https://sentosalogin.b2clogin.com/
+
+crunchyroll.com (vegitto.ru@gmail.com)
+https://sso.crunchyroll.com/
+sso-v2.crunchyroll.com (vegitto.ru@gmail.com)
+https://sso-v2.crunchyroll.com/
+
+livebook.manning.com (vegitto.ru@gmail.com)
+https://livebook.manning.com/
+manning.com (vegitto.ru@gmail.com)
+https://login.manning.com/
