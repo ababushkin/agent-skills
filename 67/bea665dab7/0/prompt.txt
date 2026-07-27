@@ -1,0 +1,103 @@
+author a skill
+that helps me find a temporary apartment in haarlem or amsterdam
+it will look through facebook groups that i've joined
+find properties that i haven't shortlisted/screened
+
+---
+
+author a skill
+that helps me find a temporary apartment in haarlem or amsterdam
+it will look through facebook groups that i've joined
+find properties that i haven't shortlisted/screened
+put them all into a table for comparison
+
+---
+
+<task-notification>
+<task-id>a52d04f1be95312a8</task-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-agent-skills/8ec312dd-0ad0-48ff-9a23-77675aa8fd73/tasks/a52d04f1be95312a8.output</output-file>
+<status>completed</status>
+<summary>Agent "Code review new skill" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>All three personas are in, with heavy cross-corroboration. Aggregating.
+
+## Review summary — `apartment-hunt-nl`
+
+**Verdict: NO-GO**
+**Findings:** Critical: 3 · Required: 11 · Suggested: 12
+`bash apartment-hunt-nl/tests/check_triage.sh` → **4/4 PASS** (I ran it). Every finding below is a gap the suite does not reach.
+
+All paths are under `/Users/anton/src/agent-skills/apartment-hunt-nl/`.
+
+---
+
+### Critical
+
+**C1 · `scripts/triage.py:345-359, 387-399` · dedup state model — all three personas**
+A post matched by *fingerprint* (not by id), or merged as a cross-post, never gets its own `post_id` written to `seen.json`. Its dedup then rests forever on six LLM-extracted fields staying byte-identical. Proven: the fixture's `verdict: "rejected"` De Pijp flat (`0998`) comes back as a new top-of-table row when the agent next reads `rooms` as `null` or `area` as `"Pijp"`. Post `1003` and `1008` appear nowhere in `seen.golden.json` — the golden file encodes the bug. This falsifies SKILL.md:149, SKILL.md:202, and README:63,65 ("never comes back").
+
+**C2 · `scripts/triage.py:87` · i18n / silent listing loss**
+`re.sub(r"[^a-z0-9]+", ...)` is ASCII-only. `"José"→"jos"`, `"Öztürk"→"zt rk"`, and any wholly non-Latin name (`"محمد حسن"`, `"Иван Петров"`) → `""`. Proven: three different landlords with non-Latin names and matching price/city/area/size/rooms collapse to **one row — two real listings silently vanish**, are never written to `seen.json`, and are reported "already seen" on every future run. No `cross-posted ×N` flag fires, because that is gated on distinct *group* names. This is the skill's actual market, and it breaks the "never drop a listing" rule.
+
+**C3 · `scripts/triage.py:457` · non-atomic write to user-edited state**
+`write_text` truncates before writing — no temp-file+`os.replace`, no `.bak`, no read-back. Proven by patching the write to fail mid-way: `seen.json` went 928 → 200 bytes and both hand-set verdicts were gone permanently. Compounded by C4 below: the next run then dies in `load_seen`, so the loss is unrecoverable without hand-repair.
+
+---
+
+### Required
+
+**R1 · `scripts/triage.py:176` · `city: "unknown"` is a false hard-fail** (I verified this myself)
+The truthy string `"unknown"` — the exact value `references/listing-fields.md:120` instructs the agent to write — is treated as an out-of-area city and emits a **fail** flag, while `city: null` for the same situation emits nothing. Both render as `unknown` in the City column, so the user cannot tell why one is flagged. Every ambiguous-`Centrum` listing gets a spurious fail and is sorted to the bottom.
+
+**R2 · `scripts/triage.py:177` · city match is exact-case and unstripped**
+`"haarlem"`, `"Haarlem "`, `"AMSTERDAM"` all get bogus fail flags. Worse on the CLI: `--cities haarlem` — and SKILL.md:41 explicitly invites `"Haarlem only"` overrides — flags **all 8** in-scope fixture posts, including every Haarlem one.
+
+**R3 · `scripts/triage.py:151-157` · tri-state matching is case-sensitive** (I verified this myself)
+`"Yes"`, `"No"`, `"TRUE"`, and the Dutch `"Ja"`/`"Nee"` all fall through to `unknown`. A shared-kitchen room with `self_contained: "No"` renders `?` with **no fail flag at all** — an explicit hard-requirement violation presented as merely unstated. The caller filling these fields is an LLM, so this will happen.
+
+**R4 · `scripts/triage.py:204` · crash on `"fields": null`**
+The only reader using `.get("fields", {})` instead of the `.get("fields") or {}` pattern used at lines 102/162/280/376. One post the agent gave up parsing → `AttributeError`, exit 1, no table, **the whole sweep's work lost**.
+
+**R5 · `scripts/triage.py:274-275` · `escape_cell` escapes only `|`**
+Newlines are not stripped, so one `\n` in `area`, `group`, or a `scam_signals` entry terminates the table and renders everything after it as prose — proven, and a scammer can plant authoritative text *outside* the table discrediting the genuine listings. Backslashes are not escaped first, so `Zuid\|` yields an unescaped separator. Control chars, ANSI (`^[[2K`), and RTL override U+202E pass through to the terminal. The peer `resell-au-pickups/scripts/make_ics.py:64` handles `\r\n`/`\n`/`\r`; this does not.
+
+**R6 · `scripts/triage.py:297` · URL breaks out of the markdown link**
+`f"[post]({url})"` is assembled *before* escaping, with no scheme allow-list. A `)` in the URL closes the link early and the remainder renders as attacker markdown — proven output included a bold `[**CLICK HERE TO BOOK VIEWING**](https://phish.example/pay)`. A `javascript:` URL also passes through, into the table, into `candidates-&lt;date&gt;.md`, and verbatim into `seen.json:390`.
+
+**R7 · `scripts/triage.py:124-131` + `SKILL.md:56` · Phase 0's own instruction crashes the script**
+"Create an empty `seen.json`" — a zero-byte file raises `JSONDecodeError`; `[]` raises `AttributeError`. Only `{}` or not creating the file works, and neither is documented. Six other malformed/hand-edited shapes (`posts` as dict/null/list-of-strings, trailing comma, directory) all produce raw tracebacks. Mitigating: every one fails *before* the write, so the file survives byte-identical — but this is the sole reason C3 is unrecoverable.
+
+**R8 · `scripts/triage.py:454` · `run_started` is required but documented nowhere the extracting agent reads**
+It appears only in triage.py's own docstring and the fixture; `grep -rn run_started` over `SKILL.md`, `references/`, `evals/` returns nothing. Phase 2 (SKILL.md:86) never tells the agent to capture it. Missing → exit 0 with `"last_run": ""` and `"first_seen": ""`, silently breaking the next run's lookback (SKILL.md:81-82).
+
+**R9 · `scripts/triage.py:439` · the run file's `groups[].status` is ignored**
+SKILL.md:88-91 makes `pending`/`swept` the resume contract, but triaging a half-swept run succeeds silently and advances `last_run`. Next run's lookback then skips everything the pending group posted before that date — permanently unread.
+
+**R10 · `scripts/triage.py:429-430, 456` · a typo'd working folder silently mints a fresh `seen.json`**
+`mkdir(parents=True)` plus load_seen's absent→empty default. Proven: `triage.py ./typo run.json` created the tree, reported `8 new, 0 already seen`, and wrote a new 8-record file. Every user verdict bypassed, real history orphaned, exit 0.
+
+**R11 · `scripts/triage.py:186-187` · comment contradicts the code** (repo comment standard)
+The comment says a listing stating one side of its window "warns"; line 193 only warns when **both** `min_months` and `max_months` are `None`. Golden line 7 confirms — post `1004` has `min_months: 3, max_months: null` and no stay flag. The behaviour is defensible; the comment is wrong.
+
+**R12 · `SKILL.md:176` vs `references/listing-fields.md:97` · unreconciled `unknown` vs `null`**
+Hard rule 7 says write `unknown` for anything unstated, with no carve-out; the reference says "leave both `null`" for stay length. Only `null` behaves. Proven: `scam_signals: "unknown"` is iterated character-by-character into `⚠ u; ⚠ n; ⚠ k; ...`, and the `stay length unstated` warning silently disappears.
+
+---
+
+### Suggested
+
+`--seen` accepts any valid-JSON file and silently merges+rewrites it, exit 0 (a sibling skill's `tracker.json` was overwritten in a probe) · `--seen` is undocumented in SKILL.md:118 and the docstring · `index_seen:140,142` keeps the LAST record per post_id but the FIRST per fingerprint, so a hand-edit collision updates the stale `rejected` record and ignores the current `shortlisted` one · `price_eur: "1500"` (string) degrades at three sites at once — fingerprint loses its price component, table prints `unknown`, user told there is no price · no validation on `--max-rent 0/-500`, `--stay-min 6 --stay-max 3` (renders `6–3 months`), or `--cities ""` · relative `run_file` resolves against CWD before the working folder, contrary to Phase 2 · hard rule 6 says "never rewrite wholesale" but the script `json.dumps`es the whole document, reflowing the user's hand formatting into a whole-file diff every run (no verdict is ever overwritten — that part holds) · `"groups": "string"` hand-edit → `AttributeError` · `photos` is captured per Phase 2 but read by nothing, though stock photos are a scam signal · nothing in the eight hard rules says post text is data, not instructions, while the agent holds an authenticated session and `evaluate_script` · Phase 6 tells the agent to set verdicts with raw Write/Edit on the same unprotected file (a `--set-verdict` subcommand would close this and C3) · `_Swept 1 posts_`.
+
+---
+
+### Test coverage
+
+Four assertions over **one** fixture run. The suite is already more rigorous than the peer `check_make_ics.sh`, and its structure matches conventions exactly — but the idempotence test passes only because the rerun is byte-identical. Highest-value missing cases, in order: (1) run 2 with one field drifted, asserting `0 new` — this alone catches C1; (2) a non-Latin author pair — catches C2; (3) malformed inputs (`"fields": null`, corrupt `seen.json`, missing run file — the one clean error path is untested); (4) any CLI override at all — `--max-rent`, `--cities`, `--stay-min/max` are never exercised despite eval case 7 promising `--max-rent 3000`; (5) a cell containing `|` or `\n` — `escape_cell` is currently exercised zero times; (6) empty `posts` / absent `seen.json` / the `_No new listings._` render.
+
+### Clean
+
+Repo conventions are correct throughout: layout, frontmatter shape, docstring style, `755`/`644` bits, test skeleton, `evals.json` shape, and the README table format all match `resell-au-pickups`. No ticket IDs, SHAs, `TODO`s, or fix-history in any comment. Nothing improper would be committed — the `__pycache__/*.pyc` is covered by the repo `.gitignore` and the peer `resell-au/scripts/` has the same artefact. No secrets, credentials, or real Facebook data in fixtures. Not vulnerable to resource exhaustion (20k posts / 72 MB → 0.48 s). `evals.json` claims all check out. AC2, AC4, AC5, AC9 hold, and there is no wall-clock call anywhere, so AC8's code side is clean.
+
+**Next step:** fix C1–C3 first — each one silently loses either a user verdict or a real listing, and C1 is baked into `seen.golden.json`, so that golden has to be regenerated rather than trusted. Then add the drifted-field rerun test and the non-Latin author fixture, which are what would have caught them.</result>
+<usage><subagent_tokens>98537</subagent_tokens><tool_uses>25</tool_uses><duration_ms>633247</duration_ms></usage>
+</task-notification>

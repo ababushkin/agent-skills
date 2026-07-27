@@ -1,0 +1,80 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "67bea665dab7",
+  "session_id": "8ec312dd-0ad0-48ff-9a23-77675aa8fd73",
+  "strategy": "manual-commit",
+  "created_at": "2026-07-27T20:25:50.18196Z",
+  "branch": "feat/apartment-hunt-nl",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "README.md",
+    "apartment-hunt-nl/SKILL.md",
+    "apartment-hunt-nl/evals/evals.json",
+    "apartment-hunt-nl/references/facebook-groups.md",
+    "apartment-hunt-nl/references/listing-fields.md",
+    "apartment-hunt-nl/references/scam-signals.md",
+    "apartment-hunt-nl/scripts/triage.py",
+    "apartment-hunt-nl/tests/check_triage.sh",
+    "apartment-hunt-nl/tests/fixtures/run-authors.json",
+    "apartment-hunt-nl/tests/fixtures/run-drift.json",
+    "apartment-hunt-nl/tests/fixtures/run-hostile.json",
+    "apartment-hunt-nl/tests/fixtures/run.json",
+    "apartment-hunt-nl/tests/fixtures/seen.golden.json",
+    "apartment-hunt-nl/tests/fixtures/seen.json",
+    "apartment-hunt-nl/tests/fixtures/triage.golden.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5",
+  "turn_id": "490034c2c43a",
+  "token_usage": {
+    "input_tokens": 146,
+    "cache_creation_tokens": 170651,
+    "cache_read_tokens": 9743345,
+    "output_tokens": 101495,
+    "api_call_count": 79
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-07-27T20:25:50.149411Z",
+    "agent_lines": 2194,
+    "agent_removed": 0,
+    "human_added": 195,
+    "human_modified": 71,
+    "human_removed": 0,
+    "total_committed": 2441,
+    "total_lines_changed": 2460,
+    "agent_percentage": 89.1869918699187,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1464,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 52,
+      "user_lines_removed": 18,
+      "agent_lines_added": 2298,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "apartment-hunt-nl/tests/fixtures/seen.golden.json": 52
+      },
+      "user_removed_per_file": {
+        "apartment-hunt-nl/tests/fixtures/seen.golden.json": 18
+      }
+    }
+  ]
+}
