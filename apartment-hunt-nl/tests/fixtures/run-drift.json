@@ -1,0 +1,87 @@
+{
+  "_comment": "Second sweep, run after run.json. Same apartments, but the agent extracted some fields differently: rooms went missing, an area got abbreviated, a price basis changed. Every post here must still be recognised as already-seen via its post id, including the two that run.json only ever matched by fingerprint (1003 as a cross-post, 1008 against a rejected record).",
+  "run_started": "2026-07-30T09:00",
+  "lookback_days": 14,
+  "groups": [
+    { "name": "Huren in Haarlem", "url": "https://www.facebook.com/groups/111", "status": "swept" },
+    { "name": "Expats in Haarlem & Amsterdam", "url": "https://www.facebook.com/groups/333", "status": "swept" },
+    { "name": "Tijdelijk wonen Amsterdam", "url": "https://www.facebook.com/groups/222", "status": "swept" }
+  ],
+  "posts": [
+    {
+      "post_id": "1001",
+      "url": "https://www.facebook.com/groups/111/posts/1001/",
+      "group": "Huren in Haarlem",
+      "author": "Lieke Boonstra",
+      "posted": "2026-07-25",
+      "photos": 6,
+      "text": "Gemeubileerd appartement in het centrum van Haarlem, 58 m2.",
+      "fields": {
+        "price_eur": 1750,
+        "price_basis": "unknown",
+        "city": "Haarlem",
+        "area": "Centrum",
+        "size_m2": null,
+        "rooms": 2,
+        "furnished": "Yes",
+        "registration": "Ja",
+        "self_contained": "yes",
+        "available_from": "2026-09-01",
+        "available_until": "2027-02-28",
+        "min_months": 3,
+        "max_months": 6,
+        "scam_signals": []
+      }
+    },
+    {
+      "post_id": "1003",
+      "url": "https://www.facebook.com/groups/333/posts/1003/",
+      "group": "Expats in Haarlem & Amsterdam",
+      "author": "Mark Jansen",
+      "posted": "2026-07-24",
+      "photos": 4,
+      "text": "Furnished two room apartment in Amsterdam Oud-West.",
+      "fields": {
+        "price_eur": 2300,
+        "price_basis": "all-in",
+        "city": "Amsterdam",
+        "area": "Oud West",
+        "size_m2": 45,
+        "rooms": null,
+        "furnished": "yes",
+        "registration": "unknown",
+        "self_contained": "yes",
+        "available_from": "2026-08-15",
+        "available_until": null,
+        "min_months": 3,
+        "max_months": 6,
+        "scam_signals": []
+      }
+    },
+    {
+      "post_id": "1008",
+      "url": "https://www.facebook.com/groups/222/posts/1008/",
+      "group": "Tijdelijk wonen Amsterdam",
+      "author": "Ilse Kramer",
+      "posted": "2026-07-26",
+      "photos": 5,
+      "text": "Tijdelijk appartement Amsterdam De Pijp, 40 m2.",
+      "fields": {
+        "price_eur": 2200,
+        "price_basis": "all-in",
+        "city": "Amsterdam",
+        "area": "Pijp",
+        "size_m2": 40,
+        "rooms": 2,
+        "furnished": "yes",
+        "registration": "Nee",
+        "self_contained": "yes",
+        "available_from": "2026-10-01",
+        "available_until": "2027-03-01",
+        "min_months": 3,
+        "max_months": 6,
+        "scam_signals": []
+      }
+    }
+  ]
+}

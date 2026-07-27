@@ -1,0 +1,147 @@
+{
+  "version": 2,
+  "last_run": "2026-07-27",
+  "posts": [
+    {
+      "url": "https://www.facebook.com/groups/111/posts/1007/",
+      "author": "Fatima El Amrani",
+      "posted": "2026-07-12",
+      "groups": [
+        "Huren in Haarlem"
+      ],
+      "title": "Haarlem / Schalkwijk · €1.400 all-in · 34m²",
+      "first_seen": "2026-07-13",
+      "verdict": "shortlisted",
+      "post_ids": [
+        "1007"
+      ],
+      "fingerprints": [
+        "fatima el amrani|1400|haarlem|schalkwijk|34|1"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/groups/333/posts/0998/",
+      "author": "Ilse Kramer",
+      "posted": "2026-07-11",
+      "groups": [
+        "Expats in Haarlem & Amsterdam",
+        "Tijdelijk wonen Amsterdam"
+      ],
+      "title": "Amsterdam / De Pijp · €2.200 all-in · 40m²",
+      "first_seen": "2026-07-13",
+      "verdict": "rejected",
+      "reject_reason": "no registration allowed",
+      "post_ids": [
+        "0998",
+        "1008"
+      ],
+      "fingerprints": [
+        "ilse kramer|2200|amsterdam|de pijp|40|2"
+      ]
+    },
+    {
+      "post_ids": [
+        "1001"
+      ],
+      "fingerprints": [
+        "lieke boonstra|1750|haarlem|centrum|58|2"
+      ],
+      "url": "https://www.facebook.com/groups/111/posts/1001/",
+      "author": "Lieke Boonstra",
+      "posted": "2026-07-25",
+      "groups": [
+        "Huren in Haarlem"
+      ],
+      "title": "Haarlem / Centrum · €1.750 all-in · 58m²",
+      "first_seen": "2026-07-27",
+      "verdict": "new"
+    },
+    {
+      "post_ids": [
+        "1002",
+        "1003"
+      ],
+      "fingerprints": [
+        "mark jansen|2300|amsterdam|oud west|45|2"
+      ],
+      "url": "https://www.facebook.com/groups/222/posts/1002/",
+      "author": "Mark Jansen",
+      "posted": "2026-07-24",
+      "groups": [
+        "Tijdelijk wonen Amsterdam",
+        "Expats in Haarlem & Amsterdam"
+      ],
+      "title": "Amsterdam / Oud-West · €2.300 all-in · 45m²",
+      "first_seen": "2026-07-27",
+      "verdict": "new"
+    },
+    {
+      "post_ids": [
+        "1006"
+      ],
+      "fingerprints": [
+        "tom visser|?|haarlem||?|?|appartement beschikbaar in haarlem stuur me een bericht voor de details"
+      ],
+      "url": "https://www.facebook.com/groups/111/posts/1006/",
+      "author": "Tom Visser",
+      "posted": "2026-07-22",
+      "groups": [
+        "Huren in Haarlem"
+      ],
+      "title": "Haarlem · unknown",
+      "first_seen": "2026-07-27",
+      "verdict": "new"
+    },
+    {
+      "post_ids": [
+        "1009"
+      ],
+      "fingerprints": [
+        "ruben meijer|2100|amsterdam|oost|62|2"
+      ],
+      "url": "https://www.facebook.com/groups/222/posts/1009/",
+      "author": "Ruben Meijer",
+      "posted": "2026-07-21",
+      "groups": [
+        "Tijdelijk wonen Amsterdam"
+      ],
+      "title": "Amsterdam / Oost · €2.100 all-in · 62m²",
+      "first_seen": "2026-07-27",
+      "verdict": "new"
+    },
+    {
+      "post_ids": [
+        "1004"
+      ],
+      "fingerprints": [
+        "sanne de wit|2900|haarlem|zuid|90|3"
+      ],
+      "url": "https://www.facebook.com/groups/111/posts/1004/",
+      "author": "Sanne de Wit",
+      "posted": "2026-07-23",
+      "groups": [
+        "Huren in Haarlem"
+      ],
+      "title": "Haarlem / Zuid · €2.900 all-in · 90m²",
+      "first_seen": "2026-07-27",
+      "verdict": "new"
+    },
+    {
+      "post_ids": [
+        "1005"
+      ],
+      "fingerprints": [
+        "property rentals bv|1200|amsterdam|nieuw west|20|1"
+      ],
+      "url": "https://www.facebook.com/groups/444/posts/1005/",
+      "author": "Property Rentals BV",
+      "posted": "2026-07-26",
+      "groups": [
+        "Kamers Amsterdam"
+      ],
+      "title": "Amsterdam / Nieuw-West · €1.200 excl. · 20m²",
+      "first_seen": "2026-07-27",
+      "verdict": "new"
+    }
+  ]
+}

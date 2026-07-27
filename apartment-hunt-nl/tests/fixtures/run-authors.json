@@ -1,0 +1,85 @@
+{
+  "_comment": "Three unrelated landlords with non-Latin names, letting flats that happen to match on price, city, area, size and rooms. They must come back as three rows. An ASCII-only name normaliser erases all three names to the empty string, fingerprints them identically, and silently drops two real listings.",
+  "run_started": "2026-08-02T11:00",
+  "lookback_days": 14,
+  "groups": [
+    { "name": "Huren in Haarlem", "url": "https://www.facebook.com/groups/111", "status": "swept" }
+  ],
+  "posts": [
+    {
+      "post_id": "2001",
+      "url": "https://www.facebook.com/groups/111/posts/2001/",
+      "group": "Huren in Haarlem",
+      "author": "محمد حسن",
+      "posted": "2026-08-01",
+      "photos": 5,
+      "text": "Gemeubileerd appartement Haarlem Centrum, 50 m2, 1800 all-in.",
+      "fields": {
+        "price_eur": 1800,
+        "price_basis": "all-in",
+        "city": "Haarlem",
+        "area": "Centrum",
+        "size_m2": 50,
+        "rooms": 2,
+        "furnished": "yes",
+        "registration": "yes",
+        "self_contained": "yes",
+        "available_from": "2026-09-01",
+        "available_until": null,
+        "min_months": 3,
+        "max_months": 6,
+        "scam_signals": []
+      }
+    },
+    {
+      "post_id": "2002",
+      "url": "https://www.facebook.com/groups/111/posts/2002/",
+      "group": "Huren in Haarlem",
+      "author": "Иван Петров",
+      "posted": "2026-08-01",
+      "photos": 3,
+      "text": "Appartement te huur Haarlem Centrum, 50 m2, 1800 euro all-in.",
+      "fields": {
+        "price_eur": 1800,
+        "price_basis": "all-in",
+        "city": "Haarlem",
+        "area": "Centrum",
+        "size_m2": 50,
+        "rooms": 2,
+        "furnished": "yes",
+        "registration": "yes",
+        "self_contained": "yes",
+        "available_from": "2026-09-15",
+        "available_until": null,
+        "min_months": 3,
+        "max_months": 6,
+        "scam_signals": []
+      }
+    },
+    {
+      "post_id": "2003",
+      "url": "https://www.facebook.com/groups/111/posts/2003/",
+      "group": "Huren in Haarlem",
+      "author": "Öztürk Yılmaz",
+      "posted": "2026-07-31",
+      "photos": 7,
+      "text": "Mooi gemeubileerd appartement in Haarlem Centrum, 50 m2, 1800 all-in.",
+      "fields": {
+        "price_eur": 1800,
+        "price_basis": "all-in",
+        "city": "Haarlem",
+        "area": "Centrum",
+        "size_m2": 50,
+        "rooms": 2,
+        "furnished": "yes",
+        "registration": "yes",
+        "self_contained": "yes",
+        "available_from": "2026-10-01",
+        "available_until": null,
+        "min_months": 3,
+        "max_months": 6,
+        "scam_signals": []
+      }
+    }
+  ]
+}

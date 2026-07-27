@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "last_run": "2026-07-13",
+  "posts": [
+    {
+      "post_id": "1007",
+      "fingerprint": "fatima el amrani|1400|haarlem|schalkwijk|34|1",
+      "url": "https://www.facebook.com/groups/111/posts/1007/",
+      "author": "Fatima El Amrani",
+      "posted": "2026-07-12",
+      "groups": ["Huren in Haarlem"],
+      "title": "Haarlem / Schalkwijk · €1.400 all-in · 34m²",
+      "first_seen": "2026-07-13",
+      "verdict": "shortlisted"
+    },
+    {
+      "post_id": "0998",
+      "fingerprint": "ilse kramer|2200|amsterdam|de pijp|40|2",
+      "url": "https://www.facebook.com/groups/333/posts/0998/",
+      "author": "Ilse Kramer",
+      "posted": "2026-07-11",
+      "groups": ["Expats in Haarlem & Amsterdam"],
+      "title": "Amsterdam / De Pijp · €2.200 all-in · 40m²",
+      "first_seen": "2026-07-13",
+      "verdict": "rejected",
+      "reject_reason": "no registration allowed"
+    }
+  ]
+}

@@ -53,6 +53,20 @@ garage-sale          → print labels and clear whatever's left
 The selling skills share a working folder (default `~/Desktop/things-for-sale/`),
 where each item is a subfolder holding its photos and a `listing.md` record.
 
+## Housing
+
+| Skill | What it does | Use it when | Invoke |
+|-------|--------------|-------------|--------|
+| **apartment-hunt-nl** | Sweeps the Facebook housing groups you've joined for temporary rentals in Haarlem and Amsterdam, drops everything already seen or screened, collapses the same apartment cross-posted to several groups into one row, and lays the rest out in a comparison table — price, size, furnishing, registration, dates, and scam flags side by side. Reads and reports only; it never messages a poster. | You want to see what's new in the housing groups without re-reading the same posts every few days, or want your candidates compared and shortlisted. | `/apartment-hunt-nl` |
+
+State lives in `~/Desktop/apartment-hunt/`: `groups.json` (which groups to
+sweep), `seen.json` (one record per apartment, with every post ID it has been
+seen under and its verdict), and `shortlist.md` (the keepers). Mark a listing
+`rejected` and it never comes back. `groups.json` and `shortlist.md` are yours
+to edit freely; change a verdict with
+`triage.py verdict <folder> <post_id> rejected --reason "..."` rather than by
+hand, so the write stays atomic and keeps a `.bak`.
+
 ## Standalone utilities
 
 Not every folder here is a skill. Some are plain scripts you run directly.

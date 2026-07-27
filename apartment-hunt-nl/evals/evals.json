@@ -1,0 +1,72 @@
+{
+  "skill_name": "apartment-hunt-nl",
+  "notes": "Trigger-only evals. This skill drives a live Facebook session, so end-to-end output cannot be benchmarked deterministically; triage.py is covered separately by tests/check_triage.sh. These cases exercise description triggering (should-trigger vs should-not-trigger), including negatives against the resell-au selling skills, which also drive Facebook.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "check the facebook groups for anything new, I need a place in Haarlem",
+      "should_trigger": true,
+      "expectations": ["Invokes apartment-hunt-nl", "Sweeps the groups in groups.json and shows only posts not already in seen.json"]
+    },
+    {
+      "id": 2,
+      "prompt": "find me a temporary apartment in Amsterdam for about 4 months",
+      "should_trigger": true,
+      "expectations": ["Invokes apartment-hunt-nl", "Applies the 3-6 month stay criterion"]
+    },
+    {
+      "id": 3,
+      "prompt": "anything new in the housing groups since last week?",
+      "should_trigger": true,
+      "expectations": ["Invokes apartment-hunt-nl", "Uses seen.json to drop already-seen posts"]
+    },
+    {
+      "id": 4,
+      "prompt": "put all the flats I haven't looked at yet into a table so I can compare them",
+      "should_trigger": true,
+      "expectations": ["Invokes apartment-hunt-nl", "Runs triage.py and prints the comparison table"]
+    },
+    {
+      "id": 5,
+      "prompt": "ik zoek tijdelijke woonruimte in Haarlem, kun je de facebook groepen checken?",
+      "should_trigger": true,
+      "expectations": ["Invokes apartment-hunt-nl", "Handles Dutch-language prompt and posts"]
+    },
+    {
+      "id": 6,
+      "prompt": "shortlist the first two and draft a message to both landlords",
+      "should_trigger": true,
+      "expectations": ["Invokes apartment-hunt-nl", "Sets verdict to shortlisted in seen.json", "Drafts the message but does NOT send it without explicit approval"]
+    },
+    {
+      "id": 7,
+      "prompt": "show me places up to 3000 a month, I'll stretch the budget",
+      "should_trigger": true,
+      "expectations": ["Invokes apartment-hunt-nl", "Passes --max-rent 3000 rather than editing the skill defaults"]
+    },
+    {
+      "id": 8,
+      "prompt": "list my coffee table on facebook marketplace",
+      "should_trigger": false,
+      "expectations": ["Routes to resell-au, NOT apartment-hunt-nl"]
+    },
+    {
+      "id": 9,
+      "prompt": "go through my marketplace messages and tell me who's picking up what",
+      "should_trigger": false,
+      "expectations": ["Routes to resell-au-pickups, NOT apartment-hunt-nl"]
+    },
+    {
+      "id": 10,
+      "prompt": "how much is my old bike worth?",
+      "should_trigger": false,
+      "expectations": ["Routes to resell-au (pricing), NOT apartment-hunt-nl"]
+    },
+    {
+      "id": 11,
+      "prompt": "what's a fair rent for a 60m2 flat in Amsterdam Oost?",
+      "should_trigger": false,
+      "expectations": ["Plain answer or a web search; no group sweep, since nothing asks to check the groups"]
+    }
+  ]
+}
