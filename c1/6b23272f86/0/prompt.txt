@@ -23,3 +23,11 @@ yes
 ---
 
 no just commit your changes
+
+---
+
+retry
+
+---
+
+/login
