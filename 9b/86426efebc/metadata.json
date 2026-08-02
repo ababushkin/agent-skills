@@ -1,0 +1,23 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "9b86426efebc",
+  "strategy": "manual-commit",
+  "branch": "feat/apartment-hunt-nl",
+  "checkpoints_count": 1,
+  "files_touched": null,
+  "sessions": [
+    {
+      "metadata": "/9b/86426efebc/0/metadata.json",
+      "transcript": "/9b/86426efebc/0/full.jsonl",
+      "content_hash": "/9b/86426efebc/0/content_hash.txt",
+      "prompt": "/9b/86426efebc/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 384,
+    "cache_creation_tokens": 748194,
+    "cache_read_tokens": 42008547,
+    "output_tokens": 205249,
+    "api_call_count": 210
+  }
+}
