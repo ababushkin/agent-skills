@@ -23,6 +23,29 @@ Which blank to write:
 both wrong — the first loses the value, the second turns into eight one-letter
 flags in the table.
 
+## Offer, wanted, or neither
+
+`post_kind` comes first, because everything else is wasted effort on a post that
+isn't a listing. Most groups run about one wanted post in four.
+
+| Reads like | `post_kind` |
+|---|---|
+| "For rent", "te huur", "available from 1 September", a price with an address | `offer` |
+| "Looking for a room", "op zoek naar", "we are a quiet couple", "my budget is €1,500", a self-introduction with a move-in date | `wanted` |
+| "Anyone have an apartment? Comment below", a link farm, a general question | `other` |
+
+The tell is who is offering what. A wanted post describes **the poster** — their
+job, their income, how tidy they are, how long they've searched. An offer
+describes **the property** — where it is, how big, what it costs.
+
+Two traps:
+
+- A wanted post often quotes a budget in euros per month. That is not a rent.
+  Scored as a listing it looks like a bargain with no address.
+- A tenant leaving mid-contract, looking for someone to take over, is an
+  `offer` — they are offering the place even though the post opens by talking
+  about themselves.
+
 ## Price
 
 | Dutch / English | Means | `price_basis` |

@@ -59,6 +59,7 @@ that a later run recognises it even if the agent extracts a field differently.
 from __future__ import annotations
 
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -78,8 +79,17 @@ SEEN_VERSION = 2
 DEFAULT_MAX_RENT = 2500
 DEFAULT_CITIES = ["Haarlem", "Amsterdam"]
 DEFAULT_STAY_MIN = 3
-DEFAULT_STAY_MAX = 6
+DEFAULT_STAY_MAX = 4
+# The dates the user actually needs. A duration band alone is not enough: a
+# five-month let starting the month they move out fits "3-6 months" perfectly
+# and is still useless.
+DEFAULT_NEED_FROM = "2026-08-15"
+DEFAULT_NEED_UNTIL = "2026-12-05"
 REQUIREMENTS = ["furnished", "registration", "self_contained"]
+
+# A post can offer a place, ask for one, or be neither. Only offers belong in
+# the comparison table; the groups are full of people advertising themselves.
+POST_KINDS = ("offer", "wanted", "other")
 
 REQUIREMENT_LABELS = {
     "furnished": "Furnished",
@@ -143,6 +153,26 @@ def as_signal_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
     return [as_text(item) or "" for item in value if as_text(item)]
+
+
+def as_date(value: Any) -> datetime.date | None:
+    text = as_text(value)
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+        return None
+    try:
+        return datetime.date.fromisoformat(text)
+    except ValueError:
+        return None
+
+
+def post_kind(post: dict[str, Any]) -> str:
+    """Whether the post offers a place, wants one, or is neither.
+
+    Defaults to "offer" when unset, so a run file that predates this field still
+    triages as before rather than silently emptying the table.
+    """
+    kind = as_text(fields_of(post).get("post_kind")).casefold()
+    return kind if kind in POST_KINDS else "offer"
 
 
 def check_requirement(value: Any) -> str:
@@ -361,6 +391,44 @@ def city_status(fields: dict[str, Any], cities: list[str]) -> str:
     return "pass" if name.casefold() in targets else "fail"
 
 
+def fmt_day(day: datetime.date) -> str:
+    return day.strftime("%-d %b")
+
+
+def check_dates(fields: dict[str, Any], crit: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Compare the listing's availability against the dates the user needs.
+
+    Returns (fails, warns). A listing whose window does not reach the user's
+    window is a fail however well it scores on everything else — this is the
+    check that separates "3 to 6 months" from "the 3 to 6 months I need".
+    """
+    need_from, need_until = crit.get("need_from"), crit.get("need_until")
+    if not need_from or not need_until:
+        return [], []
+
+    start = as_date(fields.get("available_from"))
+    end = as_date(fields.get("available_until"))
+    if start is None and end is None:
+        return [], ["dates unstated"]
+
+    # An unstated side is open-ended, not absent: "from 1 September" with no end
+    # is a place that may well still be free in December.
+    lo = max(start or need_from, need_from)
+    hi = min(end or need_until, need_until)
+    if lo > hi:
+        if start is not None and start > need_until:
+            return [f"free from {fmt_day(start)}, after you leave"], []
+        return [f"ends {fmt_day(end)}, before you arrive"], []
+
+    covered = (hi - lo).days + 1
+    needed = (need_until - need_from).days + 1
+    if covered < 28:
+        return [f"only covers {covered}d of your window"], []
+    if covered < needed:
+        return [], [f"covers {fmt_day(lo)}–{fmt_day(hi)} of your window"]
+    return [], []
+
+
 def evaluate(post: dict[str, Any], crit: dict[str, Any]) -> dict[str, Any]:
     """Measure one post against the criteria. Flags, never drops."""
     fields = fields_of(post)
@@ -398,6 +466,10 @@ def evaluate(post: dict[str, Any], crit: dict[str, Any]) -> dict[str, Any]:
         fails.append(f"max stay {stay_max:g}mo")
     if stay_min is None and stay_max is None:
         warns.append("stay length unstated")
+
+    date_fails, date_warns = check_dates(fields, crit)
+    fails += date_fails
+    warns += date_warns
 
     if as_number(post.get("photos")) == 0:
         warns.append("no photos")
@@ -543,21 +615,30 @@ def render(rows: list[dict], stats: dict[str, int], crit: dict[str, Any], pendin
         lines.append("_No new listings._")
     lines.append("")
     lines.append(
-        "_Criteria: ≤ {rent} all-in · {cities} · {stay_min}–{stay_max} months · "
+        "_Criteria: ≤ {rent} all-in · {cities}{window} · {stay_min}–{stay_max} months · "
         "furnished, registration, self-contained._".format(
             rent=fmt_eur(crit["max_rent"]),
             cities=" / ".join(crit["cities"]),
+            window=(
+                " · needs {}–{}".format(
+                    fmt_day(crit["need_from"]),
+                    crit["need_until"].strftime("%-d %b %Y"),
+                )
+                if crit.get("need_from") and crit.get("need_until")
+                else ""
+            ),
             stay_min=crit["stay_min"],
             stay_max=crit["stay_max"],
         )
     )
     lines.append(
         "_Swept {scanned}: {new} new, {seen} already seen, {merged} merged as "
-        "cross-posts._".format(
+        "cross-posts, {not_listing} not listings (people looking)._".format(
             scanned=plural(stats["scanned"], "post"),
             new=stats["new"],
             seen=stats["seen"],
             merged=stats["merged"],
+            not_listing=stats["not_listing"],
         )
     )
     if pending:
@@ -579,7 +660,8 @@ def triage(run: dict[str, Any], seen: dict[str, Any], crit: dict[str, Any]) -> t
     by_id, by_fp = index_seen(seen)
     rows: list[dict[str, Any]] = []
     rows_by_fp: dict[str, dict[str, Any]] = {}
-    stats = {"scanned": 0, "new": 0, "seen": 0, "merged": 0}
+    others: list[dict[str, Any]] = []
+    stats = {"scanned": 0, "new": 0, "seen": 0, "merged": 0, "not_listing": 0}
 
     posts = run.get("posts")
     for post in posts if isinstance(posts, list) else []:
@@ -616,19 +698,29 @@ def triage(run: dict[str, Any], seen: dict[str, Any], crit: dict[str, Any]) -> t
                 existing["groups"].append(group)
             continue
 
-        stats["new"] += 1
         row = {
             "post": post,
             "post_ids": [post_id],
             "fingerprints": [fp],
             "groups": [group],
-            "score": evaluate(post, crit),
         }
+        kind = post_kind(post)
+        if kind != "offer":
+            # Someone advertising themselves as a tenant, or a general question.
+            # Recorded so it is not re-read every run, never tabled.
+            stats["not_listing"] += 1
+            row["kind"] = kind
+            others.append(row)
+            rows_by_fp[fp] = row
+            continue
+
+        stats["new"] += 1
+        row["score"] = evaluate(post, crit)
         rows.append(row)
         rows_by_fp[fp] = row
 
     rows.sort(key=rank_key)
-    return rows, stats
+    return rows, stats, others
 
 
 def title_for(post: dict[str, Any]) -> str:
@@ -640,10 +732,16 @@ def title_for(post: dict[str, Any]) -> str:
     return " · ".join(parts)
 
 
-def commit(seen: dict[str, Any], rows: list[dict[str, Any]], run_date: str) -> None:
+def commit(
+    seen: dict[str, Any],
+    rows: list[dict[str, Any]],
+    others: list[dict[str, Any]],
+    run_date: str,
+) -> None:
     """Append the new listings. Existing records keep whatever verdict they have."""
-    for row in rows:
+    for row in rows + others:
         post = row["post"]
+        kind = row.get("kind")
         seen["posts"].append(
             {
                 "post_ids": list(row["post_ids"]),
@@ -652,9 +750,9 @@ def commit(seen: dict[str, Any], rows: list[dict[str, Any]], run_date: str) -> N
                 "author": post.get("author"),
                 "posted": post.get("posted"),
                 "groups": list(row["groups"]),
-                "title": title_for(post),
+                "title": title_for(post) if kind is None else f"[{kind}] {post.get('author')}",
                 "first_seen": run_date,
-                "verdict": "new",
+                "verdict": "new" if kind is None else "not_a_listing",
             }
         )
 
@@ -745,18 +843,33 @@ def cmd_triage(args: argparse.Namespace) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
+    need_from = as_date(args.need_from) if args.need_from else None
+    need_until = as_date(args.need_until) if args.need_until else None
+    for flag, raw, parsed in (
+        ("--need-from", args.need_from, need_from),
+        ("--need-until", args.need_until, need_until),
+    ):
+        if raw and parsed is None:
+            print(f"error: {flag} must be a YYYY-MM-DD date, got {raw!r}", file=sys.stderr)
+            return 1
+    if need_from and need_until and need_from > need_until:
+        print("error: --need-from must be on or before --need-until", file=sys.stderr)
+        return 1
+
     crit = {
         "max_rent": args.max_rent,
         "cities": cities,
         "stay_min": args.stay_min,
         "stay_max": args.stay_max,
+        "need_from": need_from,
+        "need_until": need_until,
     }
     pending = pending_groups(run)
-    rows, stats = triage(run, seen, crit)
+    rows, stats, others = triage(run, seen, crit)
     sys.stdout.write(render(rows, stats, crit, pending))
 
     if not args.dry_run:
-        commit(seen, rows, run_date)
+        commit(seen, rows, others, run_date)
         # A half-swept run must not move the watermark, or the next run's
         # lookback skips whatever the unfinished groups posted.
         if not pending:
@@ -821,6 +934,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run_cmd.add_argument("--stay-min", type=int, default=DEFAULT_STAY_MIN)
     run_cmd.add_argument("--stay-max", type=int, default=DEFAULT_STAY_MAX)
+    run_cmd.add_argument(
+        "--need-from",
+        default=DEFAULT_NEED_FROM,
+        help="first day the user needs a place (YYYY-MM-DD); '' disables the check",
+    )
+    run_cmd.add_argument(
+        "--need-until",
+        default=DEFAULT_NEED_UNTIL,
+        help="last day the user needs a place (YYYY-MM-DD); '' disables the check",
+    )
     run_cmd.add_argument("--seen", help="override the seen.json path")
     run_cmd.add_argument(
         "--dry-run", action="store_true", help="print the table without writing seen.json"

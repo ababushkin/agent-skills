@@ -1,0 +1,134 @@
+{
+  "_comment": "Date-window and post_kind coverage. The user needs a place 2026-08-15 to 2026-12-05. Post 5001 is the trap that a duration-only check waves through: a five-month furnished let that fits '3-6 months' perfectly and starts the week the user moves out. 5005 and 5006 are people advertising themselves as tenants and must never reach the table.",
+  "run_started": "2026-08-01T09:00",
+  "lookback_days": 14,
+  "groups": [
+    { "name": "Huren in Haarlem", "url": "https://www.facebook.com/groups/111", "status": "swept" }
+  ],
+  "posts": [
+    {
+      "post_id": "5001",
+      "url": "https://www.facebook.com/groups/111/posts/5001/",
+      "group": "Huren in Haarlem",
+      "author": "Wrong Window",
+      "posted": "2026-07-30",
+      "photos": 5,
+      "text": "Furnished Haarlem apartment, late November through late April.",
+      "fields": {
+        "post_kind": "offer",
+        "price_eur": 1800,
+        "price_basis": "all-in",
+        "city": "Haarlem",
+        "area": "Centrum",
+        "size_m2": 60,
+        "rooms": 2,
+        "furnished": "yes",
+        "registration": "yes",
+        "self_contained": "yes",
+        "available_from": "2026-11-30",
+        "available_until": "2027-04-30",
+        "min_months": 3,
+        "max_months": 6,
+        "scam_signals": []
+      }
+    },
+    {
+      "post_id": "5002",
+      "url": "https://www.facebook.com/groups/111/posts/5002/",
+      "group": "Huren in Haarlem",
+      "author": "Full Cover",
+      "posted": "2026-07-30",
+      "photos": 4,
+      "text": "Furnished Haarlem apartment, available all autumn.",
+      "fields": {
+        "post_kind": "offer",
+        "price_eur": 1700,
+        "price_basis": "all-in",
+        "city": "Haarlem",
+        "area": "Zuid",
+        "size_m2": 55,
+        "rooms": 2,
+        "furnished": "yes",
+        "registration": "yes",
+        "self_contained": "yes",
+        "available_from": "2026-08-01",
+        "available_until": "2026-12-31",
+        "min_months": 3,
+        "max_months": 6,
+        "scam_signals": []
+      }
+    },
+    {
+      "post_id": "5003",
+      "url": "https://www.facebook.com/groups/111/posts/5003/",
+      "group": "Huren in Haarlem",
+      "author": "Partial Cover",
+      "posted": "2026-07-30",
+      "photos": 4,
+      "text": "Furnished Haarlem apartment from 1 October.",
+      "fields": {
+        "post_kind": "offer",
+        "price_eur": 1650,
+        "price_basis": "all-in",
+        "city": "Haarlem",
+        "area": "Noord",
+        "size_m2": 52,
+        "rooms": 2,
+        "furnished": "yes",
+        "registration": "yes",
+        "self_contained": "yes",
+        "available_from": "2026-10-01",
+        "available_until": null,
+        "min_months": 3,
+        "max_months": 6,
+        "scam_signals": []
+      }
+    },
+    {
+      "post_id": "5004",
+      "url": "https://www.facebook.com/groups/111/posts/5004/",
+      "group": "Huren in Haarlem",
+      "author": "Already Gone",
+      "posted": "2026-07-30",
+      "photos": 3,
+      "text": "Furnished Haarlem apartment, May to July.",
+      "fields": {
+        "post_kind": "offer",
+        "price_eur": 1500,
+        "price_basis": "all-in",
+        "city": "Haarlem",
+        "area": "Oost",
+        "size_m2": 48,
+        "rooms": 2,
+        "furnished": "yes",
+        "registration": "yes",
+        "self_contained": "yes",
+        "available_from": "2026-05-01",
+        "available_until": "2026-07-31",
+        "min_months": 3,
+        "max_months": 6,
+        "scam_signals": []
+      }
+    },
+    {
+      "post_id": "5005",
+      "url": "https://www.facebook.com/groups/111/posts/5005/",
+      "group": "Huren in Haarlem",
+      "author": "Hopeful Tenant",
+      "posted": "2026-07-31",
+      "photos": 2,
+      "text": "Looking for a room in Haarlem from September, my budget is 1500 a month, I am quiet and tidy.",
+      "fields": { "post_kind": "wanted" }
+    },
+    {
+      "post_id": "5006",
+      "url": "https://www.facebook.com/groups/111/posts/5006/",
+      "group": "Huren in Haarlem",
+      "author": "Lead Farm",
+      "posted": "2026-07-31",
+      "photos": 0,
+      "text": "Budget friendly rooms available. Comment below your requirements.",
+      "fields": { "post_kind": "other" }
+    }
+  ]
+}

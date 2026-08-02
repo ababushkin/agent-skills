@@ -19,6 +19,74 @@ Take a snapshot after either one and confirm the control now reads "New posts"
 before you trust the order. If it doesn't, the feed is still relevance-sorted
 and your lookback window means nothing.
 
+## The extractor
+
+Post bodies do not come out of the accessibility tree. One post costs roughly
+150 lines of it, and the tree carries Facebook's anti-scraping decoys: the
+author-and-timestamp line is split into ~55 single-character nodes reordered by
+CSS, and hidden spans repeat the word "Facebook" through the post body. Reading
+a busy group that way does not finish.
+
+Run this per scroll batch instead. It returns one compact object per rendered
+post:
+
+```js
+async () => {
+  const isSeeMore = b => /^(See more|Meer weergeven)$/.test((b.innerText || '').trim());
+  const btns = [...document.querySelectorAll('div[role="button"], span[role="button"]')].filter(isSeeMore);
+  btns.forEach(b => b.click());
+  await new Promise(r => setTimeout(r, 1200));
+
+  const posts = [];
+  for (const btn of document.querySelectorAll('[aria-label^="Actions for this post by"]')) {
+    const author = btn.getAttribute('aria-label').replace('Actions for this post by ', '').trim();
+    let box = btn, id = null;
+    for (let i = 0; i < 12 && box.parentElement; i++) {
+      box = box.parentElement;
+      for (const a of box.querySelectorAll('a[href]')) {
+        const h = a.getAttribute('href') || '';
+        const m = h.match(/\/posts\/(\d+)/) || h.match(/\/permalink\/(\d+)/) || h.match(/set=pcb\.(\d+)/);
+        if (m) { id = m[1]; break; }
+      }
+      if (id) break;
+    }
+    let posted = null;
+    for (const a of box.querySelectorAll('a[aria-label], a[title]')) {
+      const v = a.getAttribute('aria-label') || a.getAttribute('title') || '';
+      if (/\d{4}/.test(v) && /(day,|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/.test(v)) { posted = v; break; }
+    }
+    const msg = box.querySelector('[data-ad-rendering-role="story_message"]');
+    posts.push({
+      post_id: id, author, posted,
+      photos: box.querySelectorAll('a[href*="/photo/"]').length,
+      text: msg ? msg.innerText.replace(/\nSee more$/, '').trim() : null
+    });
+  }
+  return posts;
+}
+```
+
+Why each anchor is the one it is:
+
+- **`[aria-label^="Actions for this post by"]`** identifies a post. `role="article"`
+  does not — comments carry it too, and the post container itself is unlabelled.
+  The label also yields the author cleanly, which the visible header does not.
+- **Climbing to the first ancestor holding a `/posts/`, `/permalink/`, or
+  `set=pcb.` link** finds the post container and its ID together. Photo links
+  carry `set=pcb.<post_id>`, so a post with photos yields an ID even when the
+  timestamp permalink is missing.
+- **`[data-ad-rendering-role="story_message"]`** is the post body. Taking
+  `innerText` of the whole container instead picks up the decoy spans.
+- **The `aria-label` on the timestamp link** is an absolute date
+  ("Wednesday, July 29, 2026 at 12:59 PM"). Use it; the visible "3h" is
+  assembled from the scrambled character nodes.
+
+Accumulate across batches into a map keyed by `post_id` — consecutive batches
+overlap, and the feed drops posts once they are far enough behind.
+
+If a batch returns `count: 0` while posts are plainly on screen, the anchors
+have changed. Stop and show the user, per hard rule 5.
+
 ## Scrolling a virtualised feed
 
 The feed recycles DOM nodes: posts scrolled far enough off-screen are destroyed,
