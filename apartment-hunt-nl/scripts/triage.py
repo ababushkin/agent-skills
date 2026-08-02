@@ -34,7 +34,7 @@ Run file input:
           "photos":   6,
           "text":     "full post body",
           "fields": {                          # filled by the agent in Phase 3
-            "price_eur": 1850, "price_basis": "all-in|excl|unknown",
+            "price_eur": 1850, "price_period": "month|total", "price_basis": "all-in|excl|unknown",
             "city": "Haarlem", "area": "Centrum",
             "size_m2": 55, "rooms": 2,
             "furnished": "yes|no|unknown",
@@ -153,6 +153,51 @@ def as_signal_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
     return [as_text(item) or "" for item in value if as_text(item)]
+
+
+DAYS_PER_MONTH = 30.44
+
+
+def stay_days(fields: dict[str, Any]) -> float | None:
+    """How long the landlord will let, in days.
+
+    Short lets are advertised by the night, the week, or a pair of dates, so
+    months are the wrong unit: a fortnight rounds to zero and a lump-sum price
+    over "0.5 months" reads as nonsense. Dates win when both are given, since
+    "13-30 August" is exact and "about a month" is not.
+    """
+    start, end = as_date(fields.get("available_from")), as_date(fields.get("available_until"))
+    if start and end and end >= start:
+        return float((end - start).days + 1)
+    nights = as_number(fields.get("nights"))
+    if nights is not None:
+        return float(nights)
+    months = as_number(fields.get("max_months")) or as_number(fields.get("min_months"))
+    return months * DAYS_PER_MONTH if months is not None else None
+
+
+def is_total_price(fields: dict[str, Any]) -> bool:
+    return as_text(fields.get("price_period")).casefold() == "total"
+
+
+def monthly_equivalent(fields: dict[str, Any]) -> float | None:
+    """The rent restated per month, whatever period the post quoted.
+
+    A total for a 17-night sublet is not a monthly rent. Compared as one it
+    looks like a 75 m2 flat going for EUR 800 a month, which is the exact shape
+    of the fraud in these groups — so a genuine short let gets flagged for being
+    cheap. Anything under a week is left alone: a nightly holiday rate scaled to
+    a month is a meaningless number.
+    """
+    price = as_number(fields.get("price_eur"))
+    if price is None:
+        return None
+    if as_text(fields.get("price_period")).casefold() != "total":
+        return price
+    days = stay_days(fields)
+    if days is None or days < 7:
+        return None
+    return price * DAYS_PER_MONTH / days
 
 
 def as_date(value: Any) -> datetime.date | None:
@@ -395,21 +440,24 @@ def fmt_day(day: datetime.date) -> str:
     return day.strftime("%-d %b")
 
 
-def check_dates(fields: dict[str, Any], crit: dict[str, Any]) -> tuple[list[str], list[str]]:
+def check_dates(
+    fields: dict[str, Any], crit: dict[str, Any]
+) -> tuple[list[str], list[str], str | None]:
     """Compare the listing's availability against the dates the user needs.
 
-    Returns (fails, warns). A listing whose window does not reach the user's
-    window is a fail however well it scores on everything else — this is the
-    check that separates "3 to 6 months" from "the 3 to 6 months I need".
+    Returns (fails, warns, cover), where cover is "full", "bridge", "partial",
+    or None. A listing whose window does not reach the user's is a fail however
+    well it scores otherwise — this is the check that separates "3 to 6 months"
+    from "the 3 to 6 months I need".
     """
     need_from, need_until = crit.get("need_from"), crit.get("need_until")
     if not need_from or not need_until:
-        return [], []
+        return [], [], None
 
     start = as_date(fields.get("available_from"))
     end = as_date(fields.get("available_until"))
     if start is None and end is None:
-        return [], ["dates unstated"]
+        return [], ["dates unstated"], None
 
     # An unstated side is open-ended, not absent: "from 1 September" with no end
     # is a place that may well still be free in December.
@@ -417,16 +465,24 @@ def check_dates(fields: dict[str, Any], crit: dict[str, Any]) -> tuple[list[str]
     hi = min(end or need_until, need_until)
     if lo > hi:
         if start is not None and start > need_until:
-            return [f"free from {fmt_day(start)}, after you leave"], []
-        return [f"ends {fmt_day(end)}, before you arrive"], []
+            return [f"free from {fmt_day(start)}, after you leave"], [], None
+        return [f"ends {fmt_day(end)}, before you arrive"], [], None
 
     covered = (hi - lo).days + 1
     needed = (need_until - need_from).days + 1
-    if covered < 28:
-        return [f"only covers {covered}d of your window"], []
-    if covered < needed:
-        return [], [f"covers {fmt_day(lo)}–{fmt_day(hi)} of your window"]
-    return [], []
+    if covered >= needed:
+        return [], [], "full"
+
+    # A short let is not a failed long let. Nobody finds one place for the whole
+    # window; they land somewhere first and keep looking. A place free on the
+    # day the user arrives solves the hardest part of the problem, so it is
+    # ranked up as a bridge rather than failed for being brief.
+    span = f"{fmt_day(lo)}–{fmt_day(hi)}"
+    if lo <= need_from + datetime.timedelta(days=3):
+        return [], [f"bridge: covers {span}, the start of your window"], "bridge"
+    if covered < 7:
+        return [f"only covers {covered}d of your window"], [], None
+    return [], [f"covers {span} of your window"], "partial"
 
 
 def evaluate(post: dict[str, Any], crit: dict[str, Any]) -> dict[str, Any]:
@@ -435,11 +491,12 @@ def evaluate(post: dict[str, Any], crit: dict[str, Any]) -> dict[str, Any]:
     fails: list[str] = []
     warns: list[str] = []
 
-    price = as_number(fields.get("price_eur"))
+    price = monthly_equivalent(fields)
     if price is None:
-        warns.append("no price")
+        warns.append("no price" if as_number(fields.get("price_eur")) is None else "price per stay")
     elif price > crit["max_rent"]:
-        fails.append(f"{fmt_eur(price)} over budget")
+        over = f"{fmt_eur(price)} over budget"
+        fails.append(over + "/mo equivalent" if is_total_price(fields) else over)
 
     if as_text(fields.get("price_basis")).casefold() == "excl":
         warns.append("excl. servicekosten")
@@ -458,18 +515,18 @@ def evaluate(post: dict[str, Any], crit: dict[str, Any]) -> dict[str, Any]:
     # Stay length. The landlord's window has to overlap the user's. A post
     # stating only one side of its window can still work, so it stays silent;
     # only a stated bound that rules the user out is a fail.
-    stay_min = as_number(fields.get("min_months"))
-    stay_max = as_number(fields.get("max_months"))
-    if stay_min is not None and stay_min > crit["stay_max"]:
-        fails.append(f"min stay {stay_min:g}mo")
-    if stay_max is not None and stay_max < crit["stay_min"]:
-        fails.append(f"max stay {stay_max:g}mo")
-    if stay_min is None and stay_max is None:
-        warns.append("stay length unstated")
-
-    date_fails, date_warns = check_dates(fields, crit)
+    date_fails, date_warns, cover = check_dates(fields, crit)
     fails += date_fails
     warns += date_warns
+
+    # A minimum term the user cannot meet is a real obstacle. A short maximum
+    # term is not — that is just a short let, and the date check has already
+    # said how much of the window it covers.
+    stay_min = as_number(fields.get("min_months"))
+    if stay_min is not None and stay_min > crit["stay_max"]:
+        fails.append(f"min stay {stay_min:g}mo")
+    if stay_min is None and as_number(fields.get("max_months")) is None and cover is None:
+        warns.append("stay length unstated")
 
     if as_number(post.get("photos")) == 0:
         warns.append("no photos")
@@ -483,6 +540,7 @@ def evaluate(post: dict[str, Any], crit: dict[str, Any]) -> dict[str, Any]:
         "warns": warns,
         "scams": scams,
         "unknowns": unknowns,
+        "cover": cover,
     }
 
 
@@ -509,13 +567,19 @@ def is_suspect(row: dict[str, Any]) -> bool:
     return bool(row["score"]["scams"])
 
 
+# A place free on the day the user arrives beats one that covers more of the
+# window but leaves them with nowhere to land.
+COVER_RANK = {"full": 0, "bridge": 1, "partial": 2, None: 3}
+
+
 def rank_key(row: dict[str, Any]) -> tuple:
-    price = as_number(fields_of(row["post"]).get("price_eur"))
+    price = monthly_equivalent(fields_of(row["post"]))
     return (
         # A flagged listing never outranks an unflagged one, however well it
         # scores on everything else.
         len(row["score"]["scams"]),
         len(row["score"]["fails"]),
+        COVER_RANK[row["score"]["cover"]],
         blankness(row["post"]),
         len(row["score"]["warns"]),
         price if price is not None else float("inf"),
@@ -577,11 +641,14 @@ def fmt_price(fields: dict[str, Any]) -> str:
     if price is None:
         return "unknown"
     basis = as_text(fields.get("price_basis")).casefold()
-    if basis == "all-in":
-        return f"{fmt_eur(price)} all-in"
-    if basis == "excl":
-        return f"{fmt_eur(price)} excl."
-    return f"{fmt_eur(price)} (?)"
+    suffix = {"all-in": " all-in", "excl": " excl."}.get(basis, " (?)")
+    if not is_total_price(fields):
+        return f"{fmt_eur(price)}{suffix}"
+    # Show what was actually asked, with the monthly equivalent alongside, so a
+    # short-let total is never mistaken for a suspiciously cheap monthly rent.
+    monthly = monthly_equivalent(fields)
+    total = f"{fmt_eur(price)} total{suffix}"
+    return f"{total} (≈{fmt_eur(monthly)}/mo)" if monthly is not None else total
 
 
 def fmt_place(fields: dict[str, Any]) -> str:

@@ -54,9 +54,25 @@ Two traps:
 | `excl. servicekosten`, `kale huur`, `+ servicekosten` | utilities and service charge on top | `excl` |
 | `€1500 p/m`, `1500 per maand` with nothing further | not stated | `unknown` |
 
-`price_eur` is the monthly rent as a plain number — no currency symbol, no
-thousands separator. `1.750` in a Dutch post is one thousand seven hundred and
-fifty, not 1.75.
+`price_eur` is the number as written — no currency symbol, no thousands
+separator. `1.750` in a Dutch post is one thousand seven hundred and fifty, not
+1.75.
+
+**`price_period` says what that number buys**, and getting it wrong is the most
+expensive mistake in this file:
+
+| The post says | `price_period` |
+|---|---|
+| "€1,750 per month", "p/m", "per maand", or nothing at all | `month` |
+| "€800 for the period", "€800 for the two weeks", a lump sum next to a date range | `total` |
+
+A short let quoted as a lump sum and recorded as `month` looks like a 75 m²
+Amsterdam flat going for €800 a month — which is the exact shape of the fraud in
+these groups. A real bargain then gets flagged as a scam and buried. When a post
+gives a date range and one price with no "per month" anywhere, it is `total`.
+
+Add `nights` when the post states a night count but no end date. When it gives
+both dates, leave `nights` out — the dates are exact.
 
 When a post gives a rent **and** a separate service charge ("1400 + 150
 servicekosten"), record `price_eur: 1400` and `price_basis: "excl"`. Do not add
@@ -131,6 +147,11 @@ relative and partial phrasing against the run date:
 `min_months` and `max_months` are the stay the **landlord** will accept, from
 `minimaal 6 maanden`, `max 1 jaar`, `3 tot 6 maanden`, `short stay`. A post
 saying only "tijdelijk" (temporary) gives you neither — leave both `null`.
+
+Do not force a short let into months. A fortnight is not `0.5` — leave the month
+fields `null` and let the dates carry it. Only `min_months` can fail a listing;
+a short maximum term is just a short let, and the date check already reports how
+much of the window it covers.
 
 Watch the difference between the availability window and the stay length. "Available
 September to March, minimum three months" is

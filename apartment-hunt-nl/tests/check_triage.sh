@@ -491,4 +491,81 @@ else
 fi
 rm -rf "$WORK"
 
+# --------------------------------------------------------------------------
+# 16. Short lets priced as a lump sum
+#     From a real listing the user took. Read as a monthly rent, a 17-night
+#     sublet at EUR 800 looks like the fraud it is not.
+# --------------------------------------------------------------------------
+WORK="$(new_work)"
+WINDOW=(--need-from 2026-08-15 --need-until 2026-12-05)
+out="$(run triage "$WORK" "$FIX/run-shortlet.json" "${WINDOW[@]}" --dry-run)"
+
+if ! grep -q "### Flagged" <<<"$out"; then
+  pass "shortlet: a cheap short let is not mistaken for a scam"
+else
+  fail "shortlet: a genuine short let was flagged"; printf '%s\n' "$out" >&2
+fi
+
+# EUR 800 over 18 nights is about EUR 1353 a month, not EUR 800.
+if grep -q "€800 total all-in (≈€1.353/mo)" <<<"$out"; then
+  pass "shortlet: the total is shown with its monthly equivalent"
+else
+  fail "shortlet: price not normalised"; printf '%s\n' "$out" >&2
+fi
+
+if grep -q "bridge: covers 15 Aug–30 Aug, the start of your window" <<<"$out"; then
+  pass "shortlet: a let free on arrival day is called a bridge"
+else
+  fail "shortlet: the bridge case was not recognised"; printf '%s\n' "$out" >&2
+fi
+
+# The bridge solves the hardest part of the problem, so it outranks a sublet of
+# the same length sitting in the middle of the window.
+bridge_line="$(grep -n 'Sloterdijk' <<<"$out" | cut -d: -f1)"
+middle_line="$(grep -n 'Amsterdam / Oost' <<<"$out" | cut -d: -f1)"
+if [ "$bridge_line" -lt "$middle_line" ]; then
+  pass "shortlet: the bridge outranks a mid-window sublet"
+else
+  fail "shortlet: bridge did not rank above the partial"; printf '%s\n' "$out" >&2
+fi
+
+# Normalisation must not become an excuse: a genuinely expensive short let is
+# still over budget once restated per month.
+if grep -q "over budget/mo equivalent" <<<"$out"; then
+  pass "shortlet: an expensive short let still fails on budget"
+else
+  fail "shortlet: budget check lost on a per-stay price"; printf '%s\n' "$out" >&2
+fi
+
+# A short max term is no longer a failure in its own right; the date check
+# already reports how much of the window a listing covers.
+if ! grep -q "max stay" <<<"$out"; then
+  pass "shortlet: a short let is not failed for being short"
+else
+  fail "shortlet: still failing on max stay"; printf '%s\n' "$out" >&2
+fi
+
+# A nightly rate is not scaled up: EUR 90 a night says nothing useful per month.
+if python3 - <<'PY'
+import sys
+sys.path.insert(0, "scripts")
+import triage
+nightly = {"price_eur": 90, "price_period": "total", "nights": 3}
+sys.exit(0 if triage.monthly_equivalent(nightly) is None else 1)
+PY
+then
+  pass "shortlet: a stay under a week is not scaled to a month"
+else
+  fail "shortlet: scaled a nightly rate into a meaningless monthly figure"
+fi
+
+# A minimum term the user cannot meet is still a hard obstacle.
+out="$(run triage "$WORK" "$FIX/run.json" "${WINDOW[@]}" --dry-run)"
+if grep -q "min stay 12mo" <<<"$out"; then
+  pass "shortlet: a minimum term the user cannot meet still fails"
+else
+  fail "shortlet: lost the minimum-term check"; printf '%s\n' "$out" >&2
+fi
+rm -rf "$WORK"
+
 exit "$status"

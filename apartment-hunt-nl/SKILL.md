@@ -36,6 +36,10 @@ Standing preferences (already decided — don't re-ask):
   a five-month let starting the month they move out satisfies "3–6 months" and
   is still useless. A listing demanding twelve months is a fail; one that
   doesn't say is a question, not a rejection.
+- **A short let that starts on time is a good result, not a failed long let.**
+  Nobody finds one place for the whole window; they land somewhere and keep
+  looking. A listing free within a few days of the arrival date is ranked up as
+  a **bridge**, above longer lets that start later.
   **Update these dates when the user's plans change** — they decide most of the
   ranking, and a stale window puts the wrong listings at the top without
   saying so.
@@ -127,10 +131,16 @@ listing looks like a cheap flat with no address, and an `offer` misread as
 `wanted` disappears silently. When a post both offers and seeks, it is an
 `offer`.
 
-Then fill in the rest of the `fields` object: price and whether it's all-in or
+Then fill in the rest of the `fields` object: price, **whether that price is per
+month or the total for a short stay** (`price_period`), whether it's all-in or
 excludes servicekosten, city, neighbourhood, size, rooms, furnishing,
 registration, self-contained or shared, available-from and available-until,
 minimum and maximum stay, and any scam signals.
+
+`price_period` matters more than it looks. A fortnight's sublet quoted as one
+lump sum, recorded as a monthly rent, reads as an impossibly cheap flat — and
+impossibly cheap is a scam signal, so a genuine short let ends up in the flagged
+section. `triage.py` restates a `total` per month and shows both.
 
 `references/listing-fields.md` carries the Dutch vocabulary and the
 normalisation rules; `references/scam-signals.md` carries the red-flag list.

@@ -1,0 +1,90 @@
+{
+  "_comment": "Short lets, drawn from a real one the user took. The user needs 15 Aug - 5 Dec 2026. 6001 is a 17-night sublet quoted as a lump sum: read as a monthly rent it looks like a 75 m2 Amsterdam flat for EUR 800/month, which is the exact shape of the fraud in these groups, so a genuine bargain gets flagged for being cheap. It must instead be priced per month, kept out of the flagged section, and ranked up as a bridge because it is free on the day the user arrives. 6002 covers the same length but in the middle of the window, so it is a plain partial. 6003 is a genuinely expensive short let and must still fail on budget.",
+  "run_started": "2026-07-30T09:00",
+  "groups": [
+    { "name": "Amsterdam Housing, Apartments & Rooms", "url": "https://www.facebook.com/groups/287563233830552/", "status": "swept" }
+  ],
+  "posts": [
+    {
+      "post_id": "6001",
+      "url": "https://www.facebook.com/groups/287563233830552/posts/6001/",
+      "group": "Amsterdam Housing, Apartments & Rooms",
+      "author": "Bridge Sublet",
+      "posted": "2026-07-29",
+      "photos": 1,
+      "text": "Modern apartment for rent August 13 to 30, 75 m2, Sloterdijk, 800 EUR including utilities.",
+      "fields": {
+        "post_kind": "offer",
+        "price_eur": 800,
+        "price_period": "total",
+        "price_basis": "all-in",
+        "city": "Amsterdam",
+        "area": "Sloterdijk",
+        "size_m2": 75,
+        "rooms": 2.5,
+        "furnished": "yes",
+        "registration": "unknown",
+        "self_contained": "yes",
+        "available_from": "2026-08-13",
+        "available_until": "2026-08-30",
+        "min_months": null,
+        "max_months": null,
+        "scam_signals": []
+      }
+    },
+    {
+      "post_id": "6002",
+      "url": "https://www.facebook.com/groups/287563233830552/posts/6002/",
+      "group": "Amsterdam Housing, Apartments & Rooms",
+      "author": "Middle Sublet",
+      "posted": "2026-07-29",
+      "photos": 3,
+      "text": "Sublet 1 October to 18 October, Amsterdam Oost, 900 EUR for the period.",
+      "fields": {
+        "post_kind": "offer",
+        "price_eur": 900,
+        "price_period": "total",
+        "price_basis": "all-in",
+        "city": "Amsterdam",
+        "area": "Oost",
+        "size_m2": 50,
+        "rooms": 2,
+        "furnished": "yes",
+        "registration": "unknown",
+        "self_contained": "yes",
+        "available_from": "2026-10-01",
+        "available_until": "2026-10-18",
+        "min_months": null,
+        "max_months": null,
+        "scam_signals": []
+      }
+    },
+    {
+      "post_id": "6003",
+      "url": "https://www.facebook.com/groups/287563233830552/posts/6003/",
+      "group": "Amsterdam Housing, Apartments & Rooms",
+      "author": "Pricey Sublet",
+      "posted": "2026-07-29",
+      "photos": 4,
+      "text": "Luxury short stay 15 August to 14 September, Amsterdam Centrum, 4500 EUR for the month.",
+      "fields": {
+        "post_kind": "offer",
+        "price_eur": 4500,
+        "price_period": "total",
+        "price_basis": "all-in",
+        "city": "Amsterdam",
+        "area": "Centrum",
+        "size_m2": 80,
+        "rooms": 3,
+        "furnished": "yes",
+        "registration": "unknown",
+        "self_contained": "yes",
+        "available_from": "2026-08-15",
+        "available_until": "2026-09-14",
+        "min_months": null,
+        "max_months": null,
+        "scam_signals": []
+      }
+    }
+  ]
+}
