@@ -1,0 +1,108 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "ab45c761d702",
+  "session_id": "8ec312dd-0ad0-48ff-9a23-77675aa8fd73",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-02T08:47:31.80876Z",
+  "branch": "feat/apartment-hunt-nl",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "apartment-hunt-nl/scripts/triage.py",
+    "apartment-hunt-nl/tests/fixtures/run-shortlet.json",
+    "apartment-hunt-nl/tests/check_triage.sh",
+    "apartment-hunt-nl/references/listing-fields.md",
+    "apartment-hunt-nl/SKILL.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5",
+  "turn_id": "19489e2aef09",
+  "checkpoint_transcript_start": 1534,
+  "transcript_lines_at_start": 1534,
+  "token_usage": {
+    "input_tokens": 44,
+    "cache_creation_tokens": 23439,
+    "cache_read_tokens": 7401960,
+    "output_tokens": 17043,
+    "api_call_count": 24
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "prompt-skill-claude-code-login-2026-08-02T08:29:37.287958Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "login"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "07922f6222c7",
+      "timestamp": "2026-08-02T08:29:37.287958Z",
+      "native": {
+        "command": "/login"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/login",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_01XFYyGSyG8qQsH1oEJYz3VE",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "apartment-hunt-nl"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "19489e2aef09",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 731,
+        "end": 732,
+        "entry_ids": [
+          "c4366e95-c0ff-41a2-b829-8140382b9468"
+        ],
+        "tool_use_id": "toolu_01XFYyGSyG8qQsH1oEJYz3VE"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01XFYyGSyG8qQsH1oEJYz3VE"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: apartment-hunt-nl",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 12
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-08-02T08:47:31.769703Z",
+    "agent_lines": 300,
+    "agent_removed": 35,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 300,
+    "total_lines_changed": 335,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
