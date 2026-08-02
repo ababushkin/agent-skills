@@ -474,18 +474,49 @@ def evaluate(post: dict[str, Any], crit: dict[str, Any]) -> dict[str, Any]:
     if as_number(post.get("photos")) == 0:
         warns.append("no photos")
 
-    for signal in as_signal_list(fields.get("scam_signals")):
-        warns.append(f"⚠ {signal}")
+    scams = as_signal_list(fields.get("scam_signals"))
 
     unknowns = sum(1 for result in checks.values() if result == "unknown")
-    return {"checks": checks, "fails": fails, "warns": warns, "unknowns": unknowns}
+    return {
+        "checks": checks,
+        "fails": fails,
+        "warns": warns,
+        "scams": scams,
+        "unknowns": unknowns,
+    }
+
+
+# Fields whose absence makes a listing unrankable rather than merely incomplete.
+TELLING_FIELDS = ("price_eur", "city", "available_from", "size_m2")
+
+
+def blankness(post: dict[str, Any]) -> int:
+    """How much of the listing the post simply does not say.
+
+    Ranking on failures alone rewards a post for being vague: a listing that
+    states no price, no address and no dates fails nothing, because there is
+    nothing to fail. Scam posts are the vaguest of all, so this has to count
+    against a listing rather than for it.
+    """
+    fields = fields_of(post)
+    missing = sum(1 for name in TELLING_FIELDS if as_number(fields.get(name)) is None
+                  and not as_text(fields.get(name)))
+    return missing + sum(1 for name in REQUIREMENTS
+                         if check_requirement(fields.get(name)) == "unknown")
+
+
+def is_suspect(row: dict[str, Any]) -> bool:
+    return bool(row["score"]["scams"])
 
 
 def rank_key(row: dict[str, Any]) -> tuple:
     price = as_number(fields_of(row["post"]).get("price_eur"))
     return (
+        # A flagged listing never outranks an unflagged one, however well it
+        # scores on everything else.
+        len(row["score"]["scams"]),
         len(row["score"]["fails"]),
-        row["score"]["unknowns"],
+        blankness(row["post"]),
         len(row["score"]["warns"]),
         price if price is not None else float("inf"),
         row["post_ids"][0],
@@ -581,6 +612,7 @@ def render_row(row: dict[str, Any]) -> str:
     fields = fields_of(post)
     checks = row["score"]["checks"]
     flags = row["score"]["fails"] + row["score"]["warns"]
+    flags += [f"⚠ {s}" for s in row["score"]["scams"]]
     if len(row["groups"]) > 1:
         flags = [f"cross-posted ×{len(row['groups'])}"] + flags
     cells = [
@@ -605,14 +637,32 @@ def plural(count: int, noun: str) -> str:
     return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
 
 
+def render_table(rows: list[dict]) -> list[str]:
+    return (
+        ["| " + " | ".join(COLUMNS) + " |", "|" + "|".join(["---"] * len(COLUMNS)) + "|"]
+        + [render_row(row) for row in rows]
+    )
+
+
 def render(rows: list[dict], stats: dict[str, int], crit: dict[str, Any], pending: list[str]) -> str:
+    # Flagged listings are shown, never dropped — the user decides. They go
+    # below the table rather than in it, because a scam post states so little
+    # that it collects no failures and would otherwise sort to the top.
+    clean = [r for r in rows if not is_suspect(r)]
+    suspect = [r for r in rows if is_suspect(r)]
+
     lines: list[str] = []
-    if rows:
-        lines.append("| " + " | ".join(COLUMNS) + " |")
-        lines.append("|" + "|".join(["---"] * len(COLUMNS)) + "|")
-        lines += [render_row(row) for row in rows]
+    if clean:
+        lines += render_table(clean)
     else:
-        lines.append("_No new listings._")
+        lines.append("_No listings without a warning flag._")
+
+    if suspect:
+        lines.append("")
+        lines.append(f"### Flagged — {plural(len(suspect), 'listing')} I would not contact")
+        lines.append("")
+        lines += render_table(suspect)
+
     lines.append("")
     lines.append(
         "_Criteria: ≤ {rent} all-in · {cities}{window} · {stay_min}–{stay_max} months · "

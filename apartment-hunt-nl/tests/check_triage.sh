@@ -93,11 +93,13 @@ fi
 # 5. Hostile post content cannot break the table or the links
 # --------------------------------------------------------------------------
 out="$(tri "$WORK" "$FIX/run-hostile.json" --dry-run)"
+# Two tables now: one clean listing, two flagged. Each contributes a header and
+# a rule row, so 7 pipe-led lines in total and not one more.
 rows="$(grep -c '^|' <<<"$out")"
-if [ "$rows" -eq 5 ]; then
-  pass "escaping: header, rule and 3 rows — nothing escaped the table"
+if [ "$rows" -eq 7 ]; then
+  pass "escaping: 3 rows across 2 tables — nothing escaped the table"
 else
-  fail "escaping: expected 5 table lines, got $rows"; printf '%s\n' "$out" >&2
+  fail "escaping: expected 7 table lines, got $rows"; printf '%s\n' "$out" >&2
 fi
 
 if grep -q 'All other listings below are fake' <<<"$out" \
@@ -427,6 +429,65 @@ if run triage "$WORK" "$FIX/run.json" --need-from "next tuesday" >/dev/null 2>&1
   fail "dates: an unparseable date should be an error"
 else
   pass "dates: an unparseable date is refused"
+fi
+rm -rf "$WORK"
+
+# --------------------------------------------------------------------------
+# 15. A scam post must never rank above a real listing
+#     Scam posts state almost nothing, so they collect no failures. Ranking on
+#     failures alone therefore sorted them to the top of the table.
+# --------------------------------------------------------------------------
+WORK="$(new_work)"
+out="$(tri "$WORK" "$FIX/run-hostile.json" --dry-run)"
+
+if grep -q "### Flagged" <<<"$out"; then
+  pass "flagged: scam-flagged listings get their own section"
+else
+  fail "flagged: no flagged section rendered"; printf '%s\n' "$out" >&2
+fi
+
+# Two of the three hostile posts carry a scam signal; both belong below the
+# fold, leaving only the unflagged one in the main table.
+if [ "$(grep -c '^|' <<<"${out#*### Flagged}")" -eq 4 ]; then
+  pass "flagged: both scam posts sit in the flagged section"
+else
+  fail "flagged: scam posts still appear as ordinary listings"; printf '%s\n' "$out" >&2
+fi
+
+# Ordering: with one clean and one flagged listing, clean must come first.
+out="$(tri "$WORK" "$FIX/run.json" --dry-run)"
+flagged_line="$(grep -n '### Flagged' <<<"$out" | cut -d: -f1)"
+clean_line="$(grep -n '1\.750' <<<"$out" | cut -d: -f1)"
+if [ -n "$flagged_line" ] && [ -n "$clean_line" ] && [ "$clean_line" -lt "$flagged_line" ]; then
+  pass "flagged: clean listings are printed above the flagged section"
+else
+  fail "flagged: a flagged listing appeared above the clean ones"; printf '%s\n' "$out" >&2
+fi
+
+# The scam signal must still be visible — flagged, never hidden.
+if grep -q "⚠ deposit before viewing" <<<"$out"; then
+  pass "flagged: the scam signal is still shown"
+else
+  fail "flagged: the scam signal disappeared from the output"; printf '%s\n' "$out" >&2
+fi
+
+# Vagueness must not earn a listing a top slot: a post stating nothing has no
+# failures, so blankness has to break the tie against a fully-specified one.
+if python3 - <<'PY'
+import sys
+sys.path.insert(0, "scripts")
+import triage
+vague = {"fields": {"post_kind": "offer"}}
+full = {"fields": {"post_kind": "offer", "price_eur": 1700, "city": "Haarlem",
+                   "available_from": "2026-09-01", "size_m2": 55,
+                   "furnished": "yes", "registration": "yes",
+                   "self_contained": "yes"}}
+sys.exit(0 if triage.blankness(vague) > triage.blankness(full) else 1)
+PY
+then
+  pass "flagged: a post stating nothing ranks below a fully specified one"
+else
+  fail "flagged: vagueness still scores as well as a complete listing"
 fi
 rm -rf "$WORK"
 
