@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "c16b23272f86",
+  "strategy": "manual-commit",
+  "branch": "feat/apartment-hunt-nl",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "apartment-hunt-nl/SKILL.md",
+    "apartment-hunt-nl/references/facebook-groups.md",
+    "apartment-hunt-nl/references/listing-fields.md",
+    "apartment-hunt-nl/scripts/triage.py",
+    "apartment-hunt-nl/tests/check_triage.sh",
+    "apartment-hunt-nl/tests/fixtures/run-dates.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c1/6b23272f86/0/metadata.json",
+      "transcript": "/c1/6b23272f86/0/full.jsonl",
+      "content_hash": "/c1/6b23272f86/0/content_hash.txt",
+      "prompt": "/c1/6b23272f86/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 210,
+    "cache_creation_tokens": 565189,
+    "cache_read_tokens": 27924191,
+    "output_tokens": 96272,
+    "api_call_count": 116
+  }
+}
